@@ -3,6 +3,9 @@
 namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
+use Spatie\Permission\Models\Role;
+use Illuminate\Support\Facades\Artisan;
+
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -19,6 +22,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+         if (Role::count() === 0) {
+        Artisan::call('db:seed', ['--class' => 'RoleSeeder']);
+    }
     }
 }
