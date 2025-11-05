@@ -19,11 +19,18 @@ use HasFactory, Notifiable, HasRoles;
      *
      * @var list<string>
      */
-    protected $fillable = [
-        'name',
-        'email',
-        'password',
-    ];
+   protected $fillable = [
+    'name',
+    'email',
+    'password',
+    'store_name',
+    'phone',
+    'city',
+    'commission',
+    'status',
+    'latitude',
+    'longitude',
+];
 
     /**
      * The attributes that should be hidden for serialization.
