@@ -1,28 +1,246 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="container mt-4">
-    <h2>Send Money</h2>
+<!DOCTYPE html>
+<html lang="en" class="">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Send Money - Transferly</title>
+  <script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
+  <script>
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            primary: "#000000",
+            "background-light": "#f7f7f7",
+            "background-dark": "#191919"
+          },
+          fontFamily: { display: "Manrope" },
+        },
+      },
+    }
+  </script>
+</head>
 
-    @if(session('error'))
-        <div class="alert alert-danger">{{ session('error') }}</div>
-    @endif
+<body class="font-display bg-background-light dark:bg-background-dark text-gray-900 dark:text-gray-100">
+<div class="flex h-screen">
+  <!-- Sidebar -->
+  <aside class="w-64 bg-background-light dark:bg-background-dark p-6 flex flex-col justify-between border-r border-gray-200 dark:border-gray-800">
+    <div>
+      <div class="flex items-center gap-3 mb-12">
+        <div class="w-8 h-8 bg-primary rounded-full"></div>
+        <span class="font-bold text-xl">Transferly</span>
+      </div>
+      <nav class="flex flex-col gap-2">
+        <a href="{{ route('user.dashboard') }}" class="flex items-center gap-3 p-3 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-800">
+          <span class="material-symbols-outlined">dashboard</span>
+          <span>Dashboard</span>
+        </a>
+        <a href="{{ route('user.transactions') }}" class="flex items-center gap-3 p-3 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-800">
+          <span class="material-symbols-outlined">receipt_long</span>
+          <span>Transactions</span>
+        </a>
+        <a href="{{ route('user.transfer') }}" class="flex items-center gap-3 p-3 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-800">
+          <span class="material-symbols-outlined">north_east</span>
+          <span>Send Money</span>
+        </a>
+                <a href="#" class="flex items-center gap-3 p-3 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-800">
+<span class="material-symbols-outlined">settings</span>
+<p >Settings</p>
+</a>
+      </nav>
+    </div>
 
-    <form method="POST" action="{{ route('user.transfer.send') }}">
-        @csrf
-        <div class="mb-3">
-            <label>Receiver</label>
-            <select name="receiver_id" class="form-control" required>
-                @foreach($users as $u)
-                    <option value="{{ $u->id }}">{{ $u->name }}</option>
-                @endforeach
-            </select>
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700"></div>
+      <div>
+        <p class="font-semibold text-gray-900 dark:text-gray-100">{{ Auth::user()->name }}</p>
+        <p class="text-sm text-gray-500 dark:text-gray-400">{{ Auth::user()->email }}</p>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="flex-1 overflow-y-auto">
+    <header class="flex justify-end items-center p-6 border-b border-gray-200 dark:border-gray-800">
+      <div class="flex items-center gap-4">
+        <button class="relative text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100">
+          <span class="material-symbols-outlined !text-2xl">notifications</span>
+          <span class="absolute top-0 right-0 w-2 h-2 bg-primary rounded-full"></span>
+        </button>
+      </div>
+    </header>
+
+    <div class="p-8">
+      <h1 class="text-3xl font-bold mb-8 text-gray-900 dark:text-gray-100 text-center">
+  Send Money
+</h1>
+
+
+      @if(session('error'))
+        <div class="mb-6 p-4 rounded-lg bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300">
+          {{ session('error') }}
         </div>
-        <div class="mb-3">
-            <label>Amount</label>
-            <input type="number" step="0.01" name="amount" class="form-control" required>
+      @endif
+
+      @if(session('success'))
+        <div class="mb-6 p-4 rounded-lg bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300">
+          {{ session('success') }}
         </div>
-        <button type="submit" class="btn btn-primary">Send</button>
-    </form>
+      @endif
+
+      <div class="max-w-lg mx-auto bg-white dark:bg-zinc-900/50 p-8 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800">
+        <form method="POST" action="{{ route('user.transfer.send') }}">
+          @csrf
+          <div class="space-y-6">
+            <!-- Identifier -->
+    <div class="flex items-center gap-6">
+  <label class="flex items-center gap-2 cursor-pointer">
+    <input 
+      type="radio" 
+      name="search_type" 
+      value="email"
+      {{ old('search_type', 'email') == 'email' ? 'checked' : '' }}
+      class="text-primary focus:ring-primary border-gray-300 dark:border-gray-600 dark:bg-gray-700"
+    />
+    <span class="text-sm">Email</span>
+  </label>
+
+  <label class="flex items-center gap-2 cursor-pointer">
+    <input 
+      type="radio" 
+      name="search_type" 
+      value="phone"
+      {{ old('search_type') == 'phone' ? 'checked' : '' }}
+      class="text-primary focus:ring-primary border-gray-300 dark:border-gray-600 dark:bg-gray-700"
+    />
+    <span class="text-sm">Phone</span>
+  </label>
 </div>
+
+       
+
+        <!-- Email Field -->
+<div id="email-field">
+  <label class="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Email</label>
+  <div class="relative">
+    <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">mail</span>
+<input 
+  type="email" 
+  name="email" 
+  placeholder="Enter receiver's email"
+  value="{{ old('email') }}"
+  class="w-full pl-10 pr-4 py-2.5 border border-gray-300 dark:border-gray-700 
+         rounded-lg bg-gray-50 dark:bg-gray-800 
+         focus:ring-2 focus:ring-primary 
+         text-gray-900 dark:text-white">
+
+         @error('email')
+  <p class="text-sm text-red-500 mt-1">{{ $message }}</p>
+@enderror
+
+
+  </div>
+</div>
+
+<!-- Phone Field -->
+<div id="phone-field" style="display:none;">
+  <label class="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Phone</label>
+  <div class="relative">
+    <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">phone</span>
+<input 
+  type="text" 
+  name="phone" 
+  placeholder="Enter receiver's phone number"
+  value="{{ old('phone') }}"
+  class="w-full pl-10 pr-4 py-2.5 border border-gray-300 dark:border-gray-700 
+         rounded-lg bg-gray-50 dark:bg-gray-800 
+         focus:ring-2 focus:ring-primary 
+         text-gray-900 dark:text-white">
+
+         @error('phone')
+  <p class="text-sm text-red-500 mt-1">{{ $message }}</p>
+@enderror
+
+
+  </div>
+</div>
+
+<!-- Amount -->
+<div>
+  <label class="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Amount</label>
+  <div class="relative">
+    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">$</span>
+<input 
+  type="number" 
+  step="0.01" 
+  name="amount" 
+  placeholder="0.00" 
+  required
+  value="{{ old('amount') }}"
+  class="w-full pl-7 pr-4 py-2.5 border border-gray-300 dark:border-gray-700 
+         rounded-lg bg-gray-50 dark:bg-gray-800 
+         focus:ring-2 focus:ring-primary 
+         text-gray-900 dark:text-white font-semibold">
+
+@error('amount')
+  <p class="text-sm text-red-500 mt-1">{{ $message }}</p>
+@enderror
+
+
+
+  </div>
+</div>
+
+
+            <!-- Submit -->
+            <button type="submit"
+              class="w-full bg-primary text-white font-semibold py-3 px-4 rounded-lg flex items-center justify-center gap-2 hover:opacity-90 transition-opacity focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary dark:focus:ring-offset-background-dark">
+              <span>Send</span>
+              <span class="material-symbols-outlined text-lg">arrow_forward</span>
+            </button>
+          </div>
+        </form>
+
+<br>
+
+
+
+
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+  // Toggle between Email and Phone inputs
+  document.querySelectorAll('input[name="search_type"]').forEach(radio => {
+      radio.addEventListener('change', function() {
+          if (this.value === 'email') {
+              document.getElementById('email-field').style.display = 'block';
+              document.getElementById('phone-field').style.display = 'none';
+          } else {
+              document.getElementById('email-field').style.display = 'none';
+              document.getElementById('phone-field').style.display = 'block';
+          }
+      });
+  });
+
+  // Toggle visibility after page load if old() exists
+window.addEventListener('DOMContentLoaded', function() {
+    const selectedType = "{{ old('search_type', 'email') }}";
+    if (selectedType === 'phone') {
+        document.getElementById('email-field').style.display = 'none';
+        document.getElementById('phone-field').style.display = 'block';
+    }
+});
+
+</script>
+</body>
+</html>
 @endsection
