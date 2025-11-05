@@ -18,34 +18,60 @@ class TransferController extends Controller
         return view('user.transfer', compact('users'));
     }
 
-    public function send(Request $request)
-    {
-        $request->validate([
-            'receiver_id' => 'required|exists:users,id',
-            'amount' => 'required|numeric|min:1',
+public function send(Request $request)
+{
+    // Basic validation
+    $request->validate([
+        'search_type' => 'required|in:email,phone',
+        'amount' => 'required|numeric|min:1',
+        'email' => 'nullable|email',
+        'phone' => 'nullable|string'
+    ]);
+
+    $sender = Auth::user();
+    $amount = $request->amount;
+
+    // Handle receiver
+    if ($request->search_type === 'email') {
+        $request->validate(['email' => 'required|email|exists:users,email'], [
+            'email.exists' => 'No user found with this email address.'
         ]);
-
-        $sender = Auth::user();
-        $receiver = User::find($request->receiver_id);
-        $amount = $request->amount;
-
-        if ($sender->balance < $amount) {
-            return back()->with('error', 'Insufficient balance.');
-        }
-
-        // Start transaction
-        $sender->balance -= $amount;
-        $receiver->balance += $amount;
-        $sender->save();
-        $receiver->save();
-
-        Transaction::create([
-            'sender_id' => $sender->id,
-            'receiver_id' => $receiver->id,
-            'amount' => $amount,
-            'status' => 'completed',
+        $receiver = User::where('email', $request->email)->first();
+    } else {
+        $request->validate(['phone' => 'required|exists:users,phone'], [
+            'phone.exists' => 'No user found with this phone number.'
         ]);
-
-        return redirect()->route('user.transactions')->with('success', 'Money sent successfully!');
+        $receiver = User::where('phone', $request->phone)->first();
     }
+
+    // --- Custom logical validation ---
+    if ($receiver->id === $sender->id) {
+        return back()->withInput()->withErrors(['error' => 'You cannot send money to yourself.']);
+    }
+
+    if ($sender->balance < $amount) {
+        return back()->withInput()->withErrors(['error' => 'You don’t have enough balance to complete this transfer.']);
+    }
+
+    if ($amount <= 0) {
+        return back()->withInput()->withErrors(['error' => 'Please enter a valid amount greater than 0.']);
+    }
+
+    // --- Process transfer ---
+    $sender->balance -= $amount;
+    $receiver->balance += $amount;
+    $sender->save();
+    $receiver->save();
+
+    Transaction::create([
+        'sender_id' => $sender->id,
+        'receiver_id' => $receiver->id,
+        'amount' => $amount,
+        'status' => 'completed',
+    ]);
+
+    return redirect()->route('user.transactions')->with('success', 'Money sent successfully!');
+}
+
+
 }

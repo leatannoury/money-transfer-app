@@ -4,81 +4,66 @@
 <!DOCTYPE html>
 <html lang="en" class="light">
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>User Dashboard - Money Transfer App</title>
-    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet">
-    <script id="tailwind-config">
-        tailwind.config = {
-            darkMode: "class",
-            theme: {
-                extend: {
-                    colors: {
-                        "primary": "#000000",
-                        "background-light": "#ffffff",
-                        "background-dark": "#000000",
-                    },
-                    fontFamily: {
-                        "display": ["Manrope", "sans-serif"]
-                    },
-                    borderRadius: {
-                        "DEFAULT": "0rem",
-                        "lg": "0rem",
-                        "xl": "0rem",
-                        "full": "9999px"
-                    },
-                },
-            },
-        }
-    </script>
-    <style>
-        body {
-            font-family: 'Manrope', sans-serif;
-        }
-    </style>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Dashboard - Transferly</title>
+  <script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
+  <script>
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            primary: "#000000",
+            "background-light": "#f7f7f7",
+            "background-dark": "#191919"
+          },
+          fontFamily: { display: "Manrope" },
+        },
+      },
+    }
+  </script>
 </head>
-<body class="bg-background-light dark:bg-background-dark font-display">
-<div class="flex min-h-screen w-full flex-col">
-<div class="flex flex-1">
-<!-- Side Navigation -->
-<aside class="flex w-64 flex-col border-r border-[#CCCCCC] bg-background-light dark:bg-background-dark dark:border-white/20">
-<div class="flex h-full flex-col justify-between p-6">
-<div class="flex flex-col gap-8">
-<div class="flex items-center gap-3">
-<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10 bg-black dark:bg-white"></div>
-<h1 class="text-black dark:text-white text-lg font-bold leading-normal">Transferly</h1>
-</div>
-<nav class="flex flex-col gap-2">
-<a href="{{ route('user.dashboard') }}" class="flex items-center gap-3 rounded-lg px-3 py-2 text-black dark:text-white bg-black/10 dark:bg-white/20">
-<span class="material-symbols-outlined text-black dark:text-white text-2xl">grid_view</span>
-<p class="text-black dark:text-white text-sm font-bold leading-normal">Dashboard</p>
-</a>
-<a href="{{ route('user.transactions') }}" class="flex items-center gap-3 px-3 py-2 text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/10 rounded-lg">
-<span class="material-symbols-outlined text-black dark:text-white text-2xl font-light">receipt_long</span>
-<p class="text-black dark:text-white text-sm font-medium leading-normal">Transactions</p>
-</a>
-<a href="{{ route('user.transfer') }}" class="flex items-center gap-3 px-3 py-2 text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/10 rounded-lg">
-<span class="material-symbols-outlined text-black dark:text-white text-2xl font-light">north_east</span>
-<p class="text-black dark:text-white text-sm font-medium leading-normal">Send Money</p>
-</a>
-<a href="#" class="flex items-center gap-3 px-3 py-2 text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/10 rounded-lg">
-<span class="material-symbols-outlined text-black dark:text-white text-2xl font-light">settings</span>
-<p class="text-black dark:text-white text-sm font-medium leading-normal">Settings</p>
-</a>
-</nav>
-</div>
-<div class="flex items-center gap-3">
-<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10" style="background-image: url('https://ui-avatars.com/api/?name={{ urlencode($user->name) }}&background=random');"></div>
-<div class="flex flex-col">
-<p class="text-black dark:text-white text-base font-bold leading-normal">{{ $user->name }}</p>
-<p class="text-black/60 dark:text-white/60 text-sm font-normal leading-normal">{{ $user->email }}</p>
-</div>
-</div>
-</div>
-</aside>
 
+<body class="font-display bg-background-light dark:bg-background-dark text-gray-900 dark:text-gray-100">
+<div class="flex h-screen">
+  <!-- Sidebar -->
+  <aside class="w-64 bg-background-light dark:bg-background-dark p-6 flex flex-col justify-between border-r border-gray-200 dark:border-gray-800">
+    <div>
+      <div class="flex items-center gap-3 mb-12">
+        <div class="w-8 h-8 bg-primary rounded-full"></div>
+        <span class="font-bold text-xl">Transferly</span>
+      </div>
+      <nav class="flex flex-col gap-2">
+        <a href="{{ route('user.dashboard') }}" class="flex items-center gap-3 p-3 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-800">
+          <span class="material-symbols-outlined">dashboard</span>
+          <span>Dashboard</span>
+        </a>
+        <a href="{{ route('user.transactions') }}" class="flex items-center gap-3 p-3 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-800">
+          <span class="material-symbols-outlined">receipt_long</span>
+          <span>Transactions</span>
+        </a>
+        <a href="{{ route('user.transfer') }}" class="flex items-center gap-3 p-3 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-800">
+          <span class="material-symbols-outlined">north_east</span>
+          <span>Send Money</span>
+        </a>
+                <a href="#" class="flex items-center gap-3 p-3 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-800">
+<span class="material-symbols-outlined">settings</span>
+<p >Settings</p>
+</a>
+      </nav>
+    </div>
+
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700"></div>
+      <div>
+        <p class="font-semibold text-gray-900 dark:text-gray-100">{{ Auth::user()->name }}</p>
+        <p class="text-sm text-gray-500 dark:text-gray-400">{{ Auth::user()->email }}</p>
+      </div>
+    </div>
+  </aside>
 <!-- Main Content -->
 <main class="flex-1">
 <header class="flex h-20 items-center justify-end border-b border-[#CCCCCC] px-8 dark:border-white/20">

@@ -6,7 +6,7 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Transferly - Transactions</title>
+  <title>Transactions - Transferly</title>
   <script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet"/>
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
@@ -41,7 +41,7 @@
           <span class="material-symbols-outlined">dashboard</span>
           <span>Dashboard</span>
         </a>
-        <a href="{{ route('user.transactions') }}" class="flex items-center gap-3 p-3 rounded-lg bg-gray-200 dark:bg-gray-800 font-semibold text-gray-900 dark:text-gray-100">
+        <a href="{{ route('user.transactions') }}" class="flex items-center gap-3 p-3 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-800">
           <span class="material-symbols-outlined">receipt_long</span>
           <span>Transactions</span>
         </a>
@@ -49,9 +49,9 @@
           <span class="material-symbols-outlined">north_east</span>
           <span>Send Money</span>
         </a>
-        <a href="#" class="flex items-center gap-3 px-3 py-2 text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/10 rounded-lg">
-<span class="material-symbols-outlined text-black dark:text-white text-2xl font-light">settings</span>
-<p class="text-black dark:text-white text-sm font-medium leading-normal">Settings</p>
+                <a href="#" class="flex items-center gap-3 p-3 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-800">
+<span class="material-symbols-outlined">settings</span>
+<p >Settings</p>
 </a>
       </nav>
     </div>
