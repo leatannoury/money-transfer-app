@@ -22,8 +22,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-         if (Role::count() === 0) {
+        if (Role::count() === 0) {
         Artisan::call('db:seed', ['--class' => 'RoleSeeder']);
     }
+
     }
+
 }

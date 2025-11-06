@@ -1,7 +1,28 @@
 <x-guest-layout>
+    <!-- Social Login Buttons -->
+    <div class="mb-6 text-center">
+        <p class="text-sm text-gray-500 mb-2">Register with</p>
+        <div class="flex justify-center space-x-3">
+            <a href="{{ url('/auth/google') }}" class="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded">
+                Google
+            </a>
+<!--           
+            <a href="{{ url('/auth/facebook') }}" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded">
+                Facebook
+            </a> -->
+        </div>
+    </div>
+
+    <!-- Divider -->
+    <div class="flex items-center justify-center my-4">
+        <div class="border-t border-gray-300 w-1/3"></div>
+        <span class="mx-2 text-gray-500 text-sm">or</span>
+        <div class="border-t border-gray-300 w-1/3"></div>
+    </div>
+
+    <!-- Breeze Registration Form -->
     <form method="POST" action="{{ route('register') }}">
         @csrf
-
         <!-- Name -->
         <div>
             <x-input-label for="name" :value="__('Name')" />
@@ -19,26 +40,23 @@
         <!-- Password -->
         <div class="mt-4">
             <x-input-label for="password" :value="__('Password')" />
-
             <x-text-input id="password" class="block mt-1 w-full"
-                            type="password"
-                            name="password"
-                            required autocomplete="new-password" />
-
+                type="password"
+                name="password"
+                required autocomplete="new-password" />
             <x-input-error :messages="$errors->get('password')" class="mt-2" />
         </div>
 
         <!-- Confirm Password -->
         <div class="mt-4">
             <x-input-label for="password_confirmation" :value="__('Confirm Password')" />
-
             <x-text-input id="password_confirmation" class="block mt-1 w-full"
-                            type="password"
-                            name="password_confirmation" required autocomplete="new-password" />
-
+                type="password"
+                name="password_confirmation" required autocomplete="new-password" />
             <x-input-error :messages="$errors->get('password_confirmation')" class="mt-2" />
         </div>
 
+        <!-- Submit -->
         <div class="flex items-center justify-end mt-4">
             <a class="underline text-sm text-gray-600 hover:text-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500" href="{{ route('login') }}">
                 {{ __('Already registered?') }}
