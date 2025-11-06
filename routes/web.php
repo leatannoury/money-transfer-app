@@ -3,6 +3,7 @@
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AgentController;
+use App\Http\Controllers\SocialAuthController;
 
 
 Route::get('/', function () {
@@ -23,3 +24,6 @@ require __DIR__.'/auth.php';
 require __DIR__.'/user.php';
 
 require __DIR__ . '/agent.php';
+
+Route::get('/auth/{provider}', [SocialAuthController::class, 'redirect']);
+Route::get('/auth/{provider}/callback', [SocialAuthController::class, 'callback']);
