@@ -10,10 +10,10 @@
                class="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded">
                 Google
             </a>
-            <!-- <a href="{{ url('/auth/facebook') }}" 
+            <a href="{{ url('/auth/facebook') }}" 
                class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded">
                 Facebook
-            </a> -->
+            </a>
         </div>
     </div>
 

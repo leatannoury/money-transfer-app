@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Http\Controllers;
+
 use Illuminate\Http\Request;
 use Laravel\Socialite\Facades\Socialite;
 use App\Models\User;
@@ -10,52 +11,49 @@ use Illuminate\Support\Str;
 class SocialAuthController extends Controller
 {
     // Redirect to provider
-public function redirect($provider)
-{
-    return Socialite::driver($provider)
-        ->with(['prompt' => 'select_account'])
-        ->redirect();
-}
-
-
-
-
-
-    // Handle callback
-  public function callback($provider)
-{
-    $socialUser = Socialite::driver($provider)->user();
-
-    // Check if user already exists
-    $user = User::where('email', $socialUser->getEmail())->first();
-
-    if (!$user) {
-        // Create a new user if not found
-        $user = User::create([
-            'name' => $socialUser->getName() ?? $socialUser->getNickname(),
-            'email' => $socialUser->getEmail(),
-            'password' => bcrypt(Str::random(16)),
-        ]);
+    public function redirect($provider)
+    {
+        return Socialite::driver($provider)
+            ->with(['prompt' => 'select_account'])
+            ->redirect();
     }
 
-    // Log the user in
-Auth::login($user);
+    // Handle callback from provider
+   public function callback($provider)
+{
+    if (request()->has('error')) {
+        return redirect('/register')->with('error', 'You cancelled the login or permissions were denied.');
+    }
 
-if (empty($user->password)) {
-    return redirect('/set-password');
+    try {
+        $socialUser = Socialite::driver($provider)
+            ->stateless() // optional, only if you don't use sessions
+            ->fields(['name', 'first_name', 'last_name', 'email'])
+            ->scopes(['email'])
+            ->user();
+
+        $email = $socialUser->getEmail() ?? $socialUser->getId().'@facebook.local';
+
+        $user = User::firstOrCreate(
+            ['email' => $email],
+            ['name' => $socialUser->getName()]
+        );
+
+        Auth::login($user, true);
+
+        return redirect('/home');
+
+    } catch (\Exception $e) {
+        return redirect('/login')->with('error', 'Failed to login with Facebook: '.$e->getMessage());
+    }
 }
 
-
-    return redirect('/dashboard');
-}
 
     public function logout(Request $request)
-{
-    Auth::logout();
-    $request->session()->invalidate();
-    $request->session()->regenerateToken();
-
-    return redirect('/');
-}
-
+    {
+        Auth::logout();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+        return redirect('/');
+    }
 }
