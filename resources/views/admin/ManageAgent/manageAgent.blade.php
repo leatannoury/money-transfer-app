@@ -72,13 +72,13 @@
           <li>
             <a href="{{ route('admin.users') }}"class="flex items-center gap-3 px-4 py-2.5 rounded-lg text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 transition-colors">
               <span class="material-symbols-outlined">group</span>
-              <span class="text-sm font-medium">Users</span>
+              <span class="text-sm font-semibold">Users</span>
             </a>
           </li>
           <li>
-            <a href="{{ route('admin.agents') }}" class="flex items-center gap-3 px-4 py-2.5 rounded-lg bg-primary/20 text-primary">
+            <a href="{{ route('admin.agents') }}"  class="flex items-center gap-3 px-4 py-2.5 rounded-lg bg-primary/20 text-primary">
               <span class="material-symbols-outlined">support_agent</span>
-              <span class="text-sm font-semibold">Agents</span>
+              <span class="text-sm font-medium">Agents</span>
             </a>
           </li>
           <li>
@@ -89,6 +89,7 @@
           </li>
         </ul>
       </nav>
+
 
       <div class="p-4 border-t border-border-light dark:border-border-dark">
         <div class="flex items-center gap-3">

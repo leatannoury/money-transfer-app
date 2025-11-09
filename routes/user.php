@@ -6,7 +6,7 @@ use App\Http\Controllers\User\TransferController;
 use App\Http\Controllers\User\TransactionController;
 
 // All user routes will share these middlewares
-Route::middleware(['auth'])->prefix('user')->name('user.')->group(function () {
+Route::middleware(['auth','role:User'])->prefix('user')->name('user.')->group(function () {
 
     //  Dashboard (show balance)
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
