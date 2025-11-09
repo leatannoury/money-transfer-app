@@ -24,6 +24,7 @@ require __DIR__.'/auth.php';
 require __DIR__.'/user.php';
 
 require __DIR__ . '/agent.php';
+require __DIR__ . '/admin.php';
 
 Route::get('/auth/{provider}', [SocialAuthController::class, 'redirect']);
 Route::get('/auth/{provider}/callback', [SocialAuthController::class, 'callback']);
