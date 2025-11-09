@@ -64,5 +64,9 @@ public function receivedTransactions()
 {
     return $this->hasMany(Transaction::class, 'receiver_id');
 }
+public function beneficiaries()
+{
+    return $this->hasMany(Beneficiary::class);
+}
 
 }

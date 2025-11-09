@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\User;
 use App\Models\Transaction;
+use App\Models\Beneficiary;
 
 class TransferController extends Controller
 {
@@ -15,7 +16,8 @@ class TransferController extends Controller
     {
         // Show form to send money
         $users = User::where('id', '!=', Auth::id())->get();
-        return view('user.transfer', compact('users'));
+        $beneficiaries = Beneficiary::where('user_id', Auth::id())->get();
+        return view('user.transfer', compact('users', 'beneficiaries'));
     }
 
 public function send(Request $request)

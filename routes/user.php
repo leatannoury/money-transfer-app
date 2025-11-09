@@ -4,6 +4,8 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\User\DashboardController;
 use App\Http\Controllers\User\TransferController;
 use App\Http\Controllers\User\TransactionController;
+use App\Http\Controllers\User\BeneficiaryController;
+
 
 // All user routes will share these middlewares
 Route::middleware(['auth','role:User'])->prefix('user')->name('user.')->group(function () {
@@ -17,4 +19,7 @@ Route::middleware(['auth','role:User'])->prefix('user')->name('user.')->group(fu
 
     //  Transaction history
     Route::get('/transactions', [TransactionController::class, 'index'])->name('transactions');
+    Route::resource('beneficiary', BeneficiaryController::class);
+    Route::post('/beneficiary/add-from-transaction/{transaction}', [BeneficiaryController::class, 'addFromTransaction'])->name('beneficiary.addFromTransaction');
+
 });
