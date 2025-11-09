@@ -49,6 +49,10 @@
           <span class="material-symbols-outlined">north_east</span>
           <span>Send Money</span>
         </a>
+        <a href="{{ route('user.beneficiary.index') }}" class="flex items-center gap-3 p-3 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-800">
+          <span class="material-symbols-outlined">people</span>
+          <span>Beneficiaries</span>
+        </a>
                 <a href="#" class="flex items-center gap-3 p-3 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-800">
 <span class="material-symbols-outlined">settings</span>
 <p >Settings</p>
@@ -98,6 +102,45 @@
         <form method="POST" action="{{ route('user.transfer.send') }}">
           @csrf
           <div class="space-y-6">
+            <!-- Beneficiary Selection -->
+            @if($beneficiaries->count() > 0)
+            <div>
+              <label class="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Select from Saved Beneficiaries</label>
+              <div class="relative">
+                <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">people</span>
+                <select 
+                  id="beneficiary-select"
+                  class="w-full pl-10 pr-4 py-2.5 border border-gray-300 dark:border-gray-700 
+                         rounded-lg bg-gray-50 dark:bg-gray-800 
+                         focus:ring-2 focus:ring-primary 
+                         text-gray-900 dark:text-white">
+                  <option value="">-- Select a beneficiary (optional) --</option>
+                  @foreach($beneficiaries as $beneficiary)
+                    @php
+                      // Try to find user by phone to get email
+                      $user = null;
+                      if ($beneficiary->phone_number) {
+                          $user = \App\Models\User::where('phone', $beneficiary->phone_number)->first();
+                      }
+                      $email = $user ? $user->email : '';
+                    @endphp
+                    <option 
+                      value="{{ $beneficiary->id }}"
+                      data-phone="{{ $beneficiary->phone_number ?? '' }}"
+                      data-email="{{ $email }}"
+                      data-name="{{ $beneficiary->full_name }}">
+                      {{ $beneficiary->full_name }} 
+                      @if($beneficiary->phone_number)
+                        ({{ $beneficiary->phone_number }})
+                      @endif
+                    </option>
+                  @endforeach
+                </select>
+              </div>
+              <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Select a saved beneficiary to auto-fill their information</p>
+            </div>
+            @endif
+
             <!-- Identifier -->
     <div class="flex items-center gap-6">
   <label class="flex items-center gap-2 cursor-pointer">
@@ -105,6 +148,7 @@
       type="radio" 
       name="search_type" 
       value="email"
+      id="search_type_email"
       {{ old('search_type', 'email') == 'email' ? 'checked' : '' }}
       class="text-primary focus:ring-primary border-gray-300 dark:border-gray-600 dark:bg-gray-700"
     />
@@ -116,6 +160,7 @@
       type="radio" 
       name="search_type" 
       value="phone"
+      id="search_type_phone"
       {{ old('search_type') == 'phone' ? 'checked' : '' }}
       class="text-primary focus:ring-primary border-gray-300 dark:border-gray-600 dark:bg-gray-700"
     />
@@ -133,6 +178,7 @@
 <input 
   type="email" 
   name="email" 
+  id="email-input"
   placeholder="Enter receiver's email"
   value="{{ old('email') }}"
   class="w-full pl-10 pr-4 py-2.5 border border-gray-300 dark:border-gray-700 
@@ -156,6 +202,7 @@
 <input 
   type="text" 
   name="phone" 
+  id="phone-input"
   placeholder="Enter receiver's phone number"
   value="{{ old('phone') }}"
   class="w-full pl-10 pr-4 py-2.5 border border-gray-300 dark:border-gray-700 
@@ -232,13 +279,52 @@
   });
 
   // Toggle visibility after page load if old() exists
-window.addEventListener('DOMContentLoaded', function() {
-    const selectedType = "{{ old('search_type', 'email') }}";
-    if (selectedType === 'phone') {
-        document.getElementById('email-field').style.display = 'none';
-        document.getElementById('phone-field').style.display = 'block';
-    }
-});
+  window.addEventListener('DOMContentLoaded', function() {
+      const selectedType = "{{ old('search_type', 'email') }}";
+      if (selectedType === 'phone') {
+          document.getElementById('email-field').style.display = 'none';
+          document.getElementById('phone-field').style.display = 'block';
+      }
+  });
+
+  // Handle beneficiary selection
+  const beneficiarySelect = document.getElementById('beneficiary-select');
+  if (beneficiarySelect) {
+      beneficiarySelect.addEventListener('change', function() {
+          const selectedOption = this.options[this.selectedIndex];
+          
+          if (this.value === '') {
+              // Clear fields if no beneficiary selected
+              document.getElementById('email-input').value = '';
+              document.getElementById('phone-input').value = '';
+              return;
+          }
+          
+          const phone = selectedOption.getAttribute('data-phone');
+          const email = selectedOption.getAttribute('data-email');
+          const name = selectedOption.getAttribute('data-name');
+          
+          // If beneficiary has phone number, use phone mode
+          if (phone && phone.trim() !== '') {
+              // Switch to phone mode
+              document.getElementById('search_type_phone').checked = true;
+              document.getElementById('search_type_phone').dispatchEvent(new Event('change'));
+              
+              // Populate phone field
+              document.getElementById('phone-input').value = phone;
+          } else if (email && email.trim() !== '') {
+              // If no phone but has email, use email mode
+              document.getElementById('search_type_email').checked = true;
+              document.getElementById('search_type_email').dispatchEvent(new Event('change'));
+              
+              // Populate email field
+              document.getElementById('email-input').value = email;
+          } else {
+              // If neither phone nor email, show message
+              alert('This beneficiary does not have contact information. Please enter their email or phone number manually.');
+          }
+      });
+  }
 
 </script>
 </body>

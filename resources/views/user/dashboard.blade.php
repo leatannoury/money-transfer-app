@@ -49,6 +49,10 @@
           <span class="material-symbols-outlined">north_east</span>
           <span>Send Money</span>
         </a>
+          <a href="{{ route('user.beneficiary.index') }}" class="flex items-center gap-3 p-3 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-800">
+        <span class="material-symbols-outlined">people</span>
+        <span>Beneficiaries</span>
+    </a>
                 <a href="#" class="flex items-center gap-3 p-3 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-800">
 <span class="material-symbols-outlined">settings</span>
 <p >Settings</p>
