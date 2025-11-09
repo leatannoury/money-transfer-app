@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\ManageUserController;
 use App\Http\Controllers\Admin\ManageAgentController;
+use App\Http\Controllers\Admin\ManageTransactionController;
 
 Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () {
   Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
@@ -17,5 +18,14 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
 Route::post('/users/{id}/update', [ManageUserController::class, 'updateUser'])->name('users.update');
 
 
-  Route::get('/manageAgents',[ManageAgentController::class,'manageAgents'])->name('manageAgent');
+  Route::get('/manageAgents',[ManageAgentController::class,'manageAgents'])->name('agents');
+    Route::post('/agents/{id}/ban', [ManageAgentController::class, 'banAgent'])->name('agents.ban');
+  Route::post('/agents/{id}/activate', [ManageAgentController::class, 'activateAgent'])->name('agents.activateAgent');
+  Route::get('/agents/add', [ManageAgentController::class, 'addAgentForm'])->name('agents.add');
+  Route::post('/agents/store', [ManageAgentController::class, 'storeAgent'])->name('agents.store');
+  Route::get('/agents/{id}/edit', [ManageAgentController::class, 'editAgentForm'])->name('agents.edit');
+Route::post('/agents/{id}/update', [ManageAgentController::class, 'updateAgent'])->name('agents.update');
+
+
+Route::get('/manageTransactions',[ManageTransactionController::class,'manageTransaction'])->name("transactions");
 });

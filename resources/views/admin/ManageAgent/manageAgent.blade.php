@@ -76,13 +76,13 @@
             </a>
           </li>
           <li>
-            <a href="{{ route('admin.manageAgent') }}" class="flex items-center gap-3 px-4 py-2.5 rounded-lg bg-primary/20 text-primary">
+            <a href="{{ route('admin.agents') }}" class="flex items-center gap-3 px-4 py-2.5 rounded-lg bg-primary/20 text-primary">
               <span class="material-symbols-outlined">support_agent</span>
               <span class="text-sm font-semibold">Agents</span>
             </a>
           </li>
           <li>
-            <a href="#" class="flex items-center gap-3 px-4 py-2.5 rounded-lg text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 transition-colors">
+            <a href="{{route('admin.transactions')}}" class="flex items-center gap-3 px-4 py-2.5 rounded-lg text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 transition-colors">
               <span class="material-symbols-outlined">receipt_long</span>
               <span class="text-sm font-medium">Transactions</span>
             </a>
@@ -95,8 +95,8 @@
           <div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10"
                style="background-image:url('https://i.pravatar.cc/100?img=68');"></div>
           <div>
-            <h2 class="text-sm font-semibold">Admin User</h2>
-            <p class="text-xs text-gray-500">admin@example.com</p>
+            <h2 class="text-sm font-semibold">{{ Auth::user()->name }}</h2>
+            <p class="text-xs text-gray-500">{{Auth::user()->email}}</p>
           </div>
         </div>
       </div>
@@ -112,69 +112,82 @@
         <!-- Header Actions -->
         <div class="flex justify-between items-center mb-6">
           <h3 class="text-lg font-semibold">Agent List</h3>
-          <button class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition flex items-center gap-1">
+           <a href="{{ route('admin.agents.add') }}">
+        <button class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition flex items-center gap-1">
             <span class="material-symbols-outlined text-sm">add</span>
             <span>Add Agent</span>
-          </button>
+        </button>
+    </a>
         </div>
 
         <!-- Static Table -->
         <div class="@container">
           <div class="overflow-hidden rounded-xl border border-border-light dark:border-border-dark bg-card-light dark:bg-card-dark">
-            <table class="w-full">
+              <table class="w-full">
               <thead class="bg-background-light dark:bg-background-dark">
                 <tr>
-                  <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">ID</th>
                   <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Name</th>
                   <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Email</th>
-                  <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Region</th>
+                  <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Phone Number</th>
+                   <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">City</th>
                   <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
+                  <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">commission</th>
                   <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
-              <tbody>
-                <tr class="hover:bg-gray-50 dark:hover:bg-gray-800 transition">
-                  <td class="px-6 py-4">1</td>
-                  <td class="px-6 py-4 font-medium">Michael Clark</td>
-                  <td class="px-6 py-4">michael@agents.com</td>
-                  <td class="px-6 py-4">North Zone</td>
-                  <td class="px-6 py-4">
-                    <span class="px-2 py-1 rounded-full text-xs font-semibold text-success bg-success/10">Active</span>
-                  </td>
-                  <td class="px-6 py-4 flex gap-2">
-                    <button class="text-primary hover:underline">Edit</button>
-                    <button class="text-error hover:underline">Delete</button>
-                  </td>
-                </tr>
-
-                <tr class="hover:bg-gray-50 dark:hover:bg-gray-800 transition">
-                  <td class="px-6 py-4">2</td>
-                  <td class="px-6 py-4 font-medium">Sarah Lee</td>
-                  <td class="px-6 py-4">sarah@agents.com</td>
-                  <td class="px-6 py-4">South Zone</td>
-                  <td class="px-6 py-4">
-                    <span class="px-2 py-1 rounded-full text-xs font-semibold text-warning bg-warning/10">Pending</span>
-                  </td>
-                  <td class="px-6 py-4 flex gap-2">
-                    <button class="text-primary hover:underline">Edit</button>
-                    <button class="text-error hover:underline">Delete</button>
-                  </td>
-                </tr>
-
-                <tr class="hover:bg-gray-50 dark:hover:bg-gray-800 transition">
-                  <td class="px-6 py-4">3</td>
-                  <td class="px-6 py-4 font-medium">David Kim</td>
-                  <td class="px-6 py-4">david@agents.com</td>
-                  <td class="px-6 py-4">West Zone</td>
-                  <td class="px-6 py-4">
-                    <span class="px-2 py-1 rounded-full text-xs font-semibold text-error bg-error/10">Inactive</span>
-                  </td>
-                  <td class="px-6 py-4 flex gap-2">
-                    <button class="text-primary hover:underline">Edit</button>
-                    <button class="text-error hover:underline">Delete</button>
-                  </td>
-                </tr>
-              </tbody>
+                <tbody>
+          @forelse($users as $user)
+          <tr class="border-t border-border-light dark:border-border-dark">
+            <td class="px-6 py-4">{{ $user->name }}</td>
+            <td class="px-6 py-4">{{ $user->email }}</td>
+            <td class="px-6 py-4"> {{ $user->phone ? '+961 '.$user->phone : 'N/A' }}</td>
+             <td class="px-6 py-4">{{ $user->city }}</td>
+            <td class="px-6 py-4">
+              @php
+                $statusColors = [
+                    'active' => 'text-green-600 bg-green-100',
+                    'inactive' => 'text-yellow-600 bg-yellow-100',
+                    'banned' => 'text-red-600 bg-red-100',
+                ];
+              @endphp
+              <span class="px-2 py-1 rounded-full text-xs font-semibold {{ $statusColors[$user->status] ?? 'text-gray-600 bg-gray-100' }}">
+                {{ ucfirst($user->status ?? 'Unknown') }}
+              </span>
+            </td>
+             <td class="px-6 py-4">{{ $user->commission .'%'}}</td>
+            <td class="px-6 py-4">
+              <div class="flex gap-2">
+                 <a href="{{ route('admin.agents.edit',$user->id) }}">
+                <button class="px-3 py-1 bg-primary text-white rounded-lg text-xs font-medium hover:bg-blue-600 transition">Edit</button>
+                 </a>
+              @if($user->status !== 'banned')
+            <!-- Ban button -->
+            <form action="{{ route('admin.agents.ban', $user->id) }}" method="POST"
+                  onsubmit="return confirm('Are you sure you want to ban {{$user->name}}?');">
+                @csrf
+                <button type="submit" class="px-3 py-1 bg-error text-white rounded-lg text-xs font-medium hover:bg-red-600 transition">
+                    Ban
+                </button>
+            </form>
+        @else
+            <!-- Activate button -->
+            <form action="{{ route('admin.agents.activateAgent', $user->id) }}" method="POST"
+                  onsubmit="return confirm('Are you sure you want to activate {{$user->name}}?');">
+                @csrf
+                <button type="submit" class="px-3 py-1 bg-green-600 text-white rounded-lg text-xs font-medium hover:bg-green-700 transition">
+                    Activate
+                </button>
+            </form>
+        @endif
+              </div>
+            </td>
+          </tr>
+          @empty
+          <tr>
+            <td colspan="5" class="px-6 py-4 text-center text-gray-500">No agents found</td>
+          </tr>
+          @endforelse
+        </tbody>
             </table>
           </div>
         </div>
