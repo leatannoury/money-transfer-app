@@ -2,35 +2,36 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Spatie\Permission\Traits\HasRoles;
 
-
 class User extends Authenticatable
 {
-    /** @use HasFactory<\Database\Factories\UserFactory> */
-use HasFactory, Notifiable, HasRoles;
+    use HasFactory, Notifiable, HasRoles;
 
     /**
      * The attributes that are mass assignable.
      *
      * @var list<string>
      */
-   protected $fillable = [
-    'name',
-    'email',
-    'password',
-    'store_name',
-    'phone',
-    'city',
-    'commission',
-    'status',
-    'latitude',
-    'longitude',
-];
+    protected $fillable = [
+        'name',
+        'email',
+        'password',
+        'store_name',
+        'phone',
+        'city',
+        'commission',
+        'status',
+        'latitude',
+        'longitude',
+        'is_available',
+        'work_start_time',
+        'work_end_time',
+        'timezone',
+    ];
 
     /**
      * The attributes that should be hidden for serialization.
@@ -43,22 +44,27 @@ use HasFactory, Notifiable, HasRoles;
     ];
 
     /**
-     * Get the attributes that should be cast.
+     * Attribute casting.
      *
-     * @return array<string, string>
+     * @var array<string, string>
      */
-    protected function casts(): array
-    {
-        return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-        ];
-    }
+    protected $casts = [
+        'email_verified_at' => 'datetime',
+        'password' => 'hashed',
+        'is_available' => 'boolean',
+        'work_start_time' => 'string',
+        'work_end_time' => 'string',
+    ];
 
+    /**
+     * Relationships
+     */
+
+    // Transactions the user sent
     public function sentTransactions()
-{
-    return $this->hasMany(Transaction::class, 'sender_id');
-}
+    {
+        return $this->hasMany(Transaction::class, 'sender_id');
+    }
 
 public function receivedTransactions()
 {
@@ -68,5 +74,22 @@ public function beneficiaries()
 {
     return $this->hasMany(Beneficiary::class);
 }
+    // Transactions processed by the agent
+    public function processedTransactions()
+    {
+        return $this->hasMany(Transaction::class, 'agent_id');
+    }
 
+    /**
+     * Check if agent is available now based on current time.
+     */
+    public function isCurrentlyAvailable(): bool
+    {
+        if (!$this->is_available || !$this->work_start_time || !$this->work_end_time) {
+            return false;
+        }
+
+        $currentTime = now()->format('H:i:s');
+        return $currentTime >= $this->work_start_time && $currentTime <= $this->work_end_time;
+    }
 }

@@ -99,6 +99,22 @@
             <tr><th>Status</th><td>{{ ucfirst($agent->status ?? 'Active') }}</td></tr>
             <tr><th>Latitude</th><td>{{ $agent->latitude ?? 'N/A' }}</td></tr>
             <tr><th>Longitude</th><td>{{ $agent->longitude ?? 'N/A' }}</td></tr>
+            <tr>
+                <th>Work Hours</th>
+                <td>
+                    {{ $agent->work_start_time ?? 'N/A' }} - {{ $agent->work_end_time ?? 'N/A' }}
+                </td>
+            </tr>
+            <tr>
+                <th>Current Availability</th>
+                <td>
+                    @if($agent->isCurrentlyAvailable())
+                        🟢 Available now
+                    @else
+                        🔴 Not available
+                    @endif
+                </td>
+            </tr>
         </table>
 
         {{-- Edit Profile Form --}}
@@ -113,6 +129,12 @@
 
             <label>Commission (%):</label>
             <input type="number" name="commission" step="0.1" min="0" value="{{ old('commission', $agent->commission) }}">
+
+            <label>Work Start Time:</label>
+            <input type="time" name="work_start_time" value="{{ old('work_start_time', $agent->work_start_time) }}">
+
+            <label>Work End Time:</label>
+            <input type="time" name="work_end_time" value="{{ old('work_end_time', $agent->work_end_time) }}">
 
             <button type="submit">Update Profile</button>
         </form>
@@ -141,14 +163,12 @@
     {{-- Leaflet.js Map --}}
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <script>
-        // Initialize map centered on Lebanon by default
         var map = L.map('map').setView([33.8938, 35.5018], 8);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 18,
             attribution: '© OpenStreetMap'
         }).addTo(map);
 
-        // Load agent data
         var agent = JSON.parse(`{!! addslashes(json_encode($agent)) !!}`);
         if (agent && agent.latitude && agent.longitude) {
             var marker = L.marker([agent.latitude, agent.longitude]).addTo(map);
