@@ -30,6 +30,15 @@ class AuthenticatedSessionController extends Controller
 
     $user = auth()->user();
 
+    // Double-check if user is banned (safety measure, handle null status)
+    if ($user && $user->status && $user->status === 'banned') {
+        Auth::logout();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+        
+        return redirect()->route('login')->with('error', 'Your account has been banned. Please contact support for assistance.');
+    }
+
     // Redirect based on role
     if ($user->hasRole('Admin')) {
         return redirect()->route('admin.dashboard');

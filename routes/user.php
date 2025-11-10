@@ -8,7 +8,7 @@ use App\Http\Controllers\User\BeneficiaryController;
 
 
 // All user routes will share these middlewares
-Route::middleware(['auth','role:User'])->prefix('user')->name('user.')->group(function () {
+Route::middleware(['auth','check.banned','role:User'])->prefix('user')->name('user.')->group(function () {
 
     //  Dashboard (show balance)
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');

@@ -49,6 +49,18 @@ class LoginRequest extends FormRequest
             ]);
         }
 
+        // Check if the authenticated user is banned (handle null status)
+        $user = Auth::user();
+        if ($user && $user->status && $user->status === 'banned') {
+            // Logout the user immediately
+            Auth::logout();
+            RateLimiter::hit($this->throttleKey());
+
+            throw ValidationException::withMessages([
+                'email' => 'Your account has been banned. Please contact support for assistance.',
+            ]);
+        }
+
         RateLimiter::clear($this->throttleKey());
     }
 

@@ -2,6 +2,13 @@
     <!-- Session Status -->
     <x-auth-session-status class="mb-4" :status="session('status')" />
 
+    <!-- Error Message -->
+    @if(session('error'))
+        <div class="mb-4 p-4 rounded-lg bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300">
+            {{ session('error') }}
+        </div>
+    @endif
+
     <!-- Social Login Buttons -->
     <div class="mb-6 text-center">
         <p class="text-sm text-gray-500 mb-2">Log in with</p>
