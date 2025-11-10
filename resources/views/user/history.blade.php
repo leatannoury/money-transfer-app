@@ -99,12 +99,51 @@
         <div class="flex justify-between items-center mb-6">
           <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100">Transaction History</h2>
           <div class="flex items-center gap-4">
-            <button class="flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800">
-              <span class="material-symbols-outlined !text-base">filter_list</span> Filter
-            </button>
-            <button class="flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800">
-              <span class="material-symbols-outlined !text-base">download</span> Export
-            </button>
+
+<form method="GET" action="{{ route('user.transactions') }}" id="filterForm" class="flex items-center gap-2">
+
+  <select name="type" onchange="this.form.submit()" class="border rounded-lg p-2 text-sm">
+    <option value="">All Types</option>
+    <option value="sent" {{ request('type') == 'sent' ? 'selected' : '' }}>Sent</option>
+    <option value="received" {{ request('type') == 'received' ? 'selected' : '' }}>Received</option>
+  </select>
+
+  <select name="status" onchange="this.form.submit()" class="border rounded-lg p-2 text-sm">
+    <option value="">All Statuses</option>
+    <option value="completed" {{ request('status') == 'completed' ? 'selected' : '' }}>Completed</option>
+    <option value="pending" {{ request('status') == 'pending' ? 'selected' : '' }}>Pending</option>
+    <option value="failed" {{ request('status') == 'failed' ? 'selected' : '' }}>Failed</option>
+  </select>
+
+  <input type="date" name="from_date" value="{{ request('from_date') }}" onchange="this.form.submit()" class="border rounded-lg p-2 text-sm"/>
+  <input type="date" name="to_date" value="{{ request('to_date') }}" onchange="this.form.submit()" class="border rounded-lg p-2 text-sm"/>
+
+<select name="sort" onchange="this.form.submit()" class="border rounded-lg p-2 text-sm">
+  <option value="">Sort By</option>
+  <option value="newest" {{ request('sort') == 'newest' ? 'selected' : '' }}>Newest</option>
+  <option value="oldest" {{ request('sort') == 'oldest' ? 'selected' : '' }}>Oldest</option>
+  <option value="amount_desc" {{ request('sort') == 'amount_desc' ? 'selected' : '' }}>Amount (High → Low)</option>
+  <option value="amount_asc" {{ request('sort') == 'amount_asc' ? 'selected' : '' }}>Amount (Low → High)</option>
+</select>
+
+
+  <a href="{{ route('user.transactions') }}" class="px-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-100">
+    Reset
+  </a>
+</form>
+
+
+<div class="relative inline-block">
+  <button id="exportBtn" class="flex items-center gap-2 ...">
+    <span class="material-symbols-outlined !text-base">download</span> Export
+  </button>
+  <div id="exportMenu" class="hidden absolute mt-2 bg-white border rounded shadow">
+<a href="{{ request()->fullUrlWithQuery(['export' => 'pdf']) }}" class="block px-4 py-2 text-sm">PDF</a>
+<a href="{{ request()->fullUrlWithQuery(['export' => 'csv']) }}" class="block px-4 py-2 text-sm">CSV</a>
+
+  </div>
+</div>
+
           </div>
         </div>
 
@@ -185,6 +224,10 @@
             <p class="text-center text-gray-500 dark:text-gray-400 py-6">No transactions yet.</p>
           @endforelse
         </div>
+        <div class="mt-6">
+    {{ $transactions->links('pagination::tailwind') }}
+</div>
+
       </div>
     </div>
   </main>
@@ -192,3 +235,33 @@
 </body>
 </html>
 @endsection
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const filterForm = document.getElementById('filterForm');
+    if (!filterForm) {
+      console.warn('Filter form not found: ensure the form has id="filterForm"');
+      return;
+    }
+    const inputs = filterForm.querySelectorAll('select, input[type="date"]');
+
+    inputs.forEach(input => {
+      input.addEventListener('change', () => {
+        filterForm.submit();
+      });
+    });
+  });
+</script>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const exportBtn = document.getElementById('exportBtn');
+    const exportMenu = document.getElementById('exportMenu');
+
+    if (exportBtn && exportMenu) {
+        exportBtn.addEventListener('click', () => {
+            exportMenu.classList.toggle('hidden');
+        });
+    }
+  });
+</script>
