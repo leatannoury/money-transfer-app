@@ -19,6 +19,7 @@ Route::middleware(['auth','check.banned','role:User'])->prefix('user')->name('us
 
     //  Transaction history
     Route::get('/transactions', [TransactionController::class, 'index'])->name('transactions');
+    
     Route::resource('beneficiary', BeneficiaryController::class);
     Route::post('/beneficiary/add-from-transaction/{transaction}', [BeneficiaryController::class, 'addFromTransaction'])->name('beneficiary.addFromTransaction');
 
