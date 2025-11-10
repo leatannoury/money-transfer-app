@@ -6,7 +6,7 @@ use App\Http\Controllers\Admin\ManageUserController;
 use App\Http\Controllers\Admin\ManageAgentController;
 use App\Http\Controllers\Admin\ManageTransactionController;
 
-Route::middleware(['auth','role:Admin'])->prefix('admin')->name('admin.')->group(function () {
+Route::middleware(['auth','check.banned','role:Admin'])->prefix('admin')->name('admin.')->group(function () {
   Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
   Route::get('/manageUsers', [ManageUserController::class, 'manageUsers'])->name('users');
 
