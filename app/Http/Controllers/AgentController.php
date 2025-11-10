@@ -31,6 +31,8 @@ class AgentController extends Controller
             'phone' => 'nullable|string|max:20',
             'city' => 'nullable|string|max:255',
             'commission' => 'nullable|numeric|min:0',
+            'work_start_time' => 'nullable|date_format:H:i',
+            'work_end_time' => 'nullable|date_format:H:i',
         ]);
 
         /** @var \App\Models\User $agent */
@@ -40,6 +42,8 @@ class AgentController extends Controller
         $agent->phone = $request->phone;
         $agent->city = $request->city;
         $agent->commission = $request->commission;
+        $agent->work_start_time = $request->work_start_time;
+        $agent->work_end_time = $request->work_end_time;
         $agent->status = $agent->status ?? 'active';
 
         // --- Auto Fetch Latitude & Longitude based on City ---
