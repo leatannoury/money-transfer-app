@@ -49,6 +49,10 @@
           <span class="material-symbols-outlined">north_east</span>
           <span>Send Money</span>
         </a>
+        <a href="{{ route('user.beneficiary.index') }}" class="flex items-center gap-3 p-3 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-800">
+          <span class="material-symbols-outlined">people</span>
+          <span>Beneficiaries</span>
+        </a>
                 <a href="#" class="flex items-center gap-3 p-3 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-800">
 <span class="material-symbols-outlined">settings</span>
 <p >Settings</p>
@@ -79,68 +83,151 @@
     <div class="p-8">
       <h1 class="text-3xl font-bold mb-8 text-gray-900 dark:text-gray-100">All Transactions</h1>
 
+      @if(session('success'))
+        <div class="mb-4 p-4 rounded-lg bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300">
+          {{ session('success') }}
+        </div>
+      @endif
+
+      @if(session('error'))
+        <div class="mb-4 p-4 rounded-lg bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300">
+          {{ session('error') }}
+        </div>
+      @endif
+
       <div class="bg-white dark:bg-zinc-900/50 p-6 rounded-lg shadow-sm">
         <div class="flex justify-between items-center mb-6">
           <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100">Transaction History</h2>
           <div class="flex items-center gap-4">
-            <button class="flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800">
-              <span class="material-symbols-outlined !text-base">filter_list</span> Filter
-            </button>
-            <button class="flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800">
-              <span class="material-symbols-outlined !text-base">download</span> Export
-            </button>
+
+<form method="GET" action="{{ route('user.transactions') }}" id="filterForm" class="flex items-center gap-2">
+
+  <select name="type" onchange="this.form.submit()" class="border rounded-lg p-2 text-sm">
+    <option value="">All Types</option>
+    <option value="sent" {{ request('type') == 'sent' ? 'selected' : '' }}>Sent</option>
+    <option value="received" {{ request('type') == 'received' ? 'selected' : '' }}>Received</option>
+  </select>
+
+  <select name="status" onchange="this.form.submit()" class="border rounded-lg p-2 text-sm">
+    <option value="">All Statuses</option>
+    <option value="completed" {{ request('status') == 'completed' ? 'selected' : '' }}>Completed</option>
+    <option value="pending" {{ request('status') == 'pending' ? 'selected' : '' }}>Pending</option>
+    <option value="failed" {{ request('status') == 'failed' ? 'selected' : '' }}>Failed</option>
+  </select>
+
+  <input type="date" name="from_date" value="{{ request('from_date') }}" onchange="this.form.submit()" class="border rounded-lg p-2 text-sm"/>
+  <input type="date" name="to_date" value="{{ request('to_date') }}" onchange="this.form.submit()" class="border rounded-lg p-2 text-sm"/>
+
+<select name="sort" onchange="this.form.submit()" class="border rounded-lg p-2 text-sm">
+  <option value="">Sort By</option>
+  <option value="newest" {{ request('sort') == 'newest' ? 'selected' : '' }}>Newest</option>
+  <option value="oldest" {{ request('sort') == 'oldest' ? 'selected' : '' }}>Oldest</option>
+  <option value="amount_desc" {{ request('sort') == 'amount_desc' ? 'selected' : '' }}>Amount (High → Low)</option>
+  <option value="amount_asc" {{ request('sort') == 'amount_asc' ? 'selected' : '' }}>Amount (Low → High)</option>
+</select>
+
+
+  <a href="{{ route('user.transactions') }}" class="px-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-100">
+    Reset
+  </a>
+</form>
+
+
+<div class="relative inline-block">
+  <button id="exportBtn" class="flex items-center gap-2 ...">
+    <span class="material-symbols-outlined !text-base">download</span> Export
+  </button>
+  <div id="exportMenu" class="hidden absolute mt-2 bg-white border rounded shadow">
+<a href="{{ request()->fullUrlWithQuery(['export' => 'pdf']) }}" class="block px-4 py-2 text-sm">PDF</a>
+<a href="{{ request()->fullUrlWithQuery(['export' => 'csv']) }}" class="block px-4 py-2 text-sm">CSV</a>
+
+  </div>
+</div>
+
           </div>
         </div>
 
         <div class="space-y-2">
           @forelse($transactions as $txn)
+            @php
+              $isOutgoing = $txn->sender_id == Auth::id();
+              $isCompleted = $txn->status == 'completed';
+              $canAddBeneficiary = $isOutgoing && $isCompleted && $txn->receiver;
+              $receiverName = $txn->receiver->name ?? '';
+              $receiverPhone = $txn->receiver->phone ?? '';
+              $alreadyBeneficiary = $canAddBeneficiary && (
+                in_array($receiverName, $beneficiaryNames) || 
+                ($receiverPhone && in_array($receiverPhone, $beneficiaryPhones))
+              );
+            @endphp
             <div class="flex items-center p-4 border-b border-gray-200 dark:border-gray-800">
               <!-- Icon -->
               <div class="w-10 h-10 rounded-full 
-                @if($txn->sender_id == Auth::id())
+                @if($isOutgoing)
                   bg-gray-100 dark:bg-gray-800
                 @else
                   bg-green-100 dark:bg-green-900/50
                 @endif
                 flex items-center justify-center mr-4">
                 <span class="material-symbols-outlined
-                  @if($txn->sender_id == Auth::id())
+                  @if($isOutgoing)
                     text-gray-600 dark:text-gray-400
                   @else
                     text-green-600 dark:text-green-400
                   @endif">
-                  {{ $txn->sender_id == Auth::id() ? 'north_east' : 'south_west' }}
+                  {{ $isOutgoing ? 'north_east' : 'south_west' }}
                 </span>
               </div>
 
               <!-- Details -->
               <div class="flex-1">
-                @if($txn->sender_id == Auth::id())
-                  <p class="font-semibold text-gray-900 dark:text-gray-100">Sent to {{ $txn->receiver->name }}</p>
+                @if($isOutgoing)
+                  <p class="font-semibold text-gray-900 dark:text-gray-100">Sent to {{ $txn->receiver->name ?? 'Unknown' }}</p>
                 @else
-                  <p class="font-semibold text-gray-900 dark:text-gray-100">Received from {{ $txn->sender->name }}</p>
+                  <p class="font-semibold text-gray-900 dark:text-gray-100">Received from {{ $txn->sender->name ?? 'Unknown' }}</p>
                 @endif
                 <p class="text-sm text-gray-500 dark:text-gray-400">{{ $txn->created_at->format('M d, Y H:i') }}</p>
               </div>
 
-              <!-- Amount & Status -->
-              <div class="text-right">
-                <p class="font-semibold text-gray-900 dark:text-gray-100">
-                  {{ $txn->sender_id == Auth::id() ? '-' : '+' }}${{ number_format($txn->amount, 2) }}
-                </p>
-                <p class="text-sm 
-                  @if($txn->status == 'completed') text-green-600 dark:text-green-500
-                  @elseif($txn->status == 'pending') text-yellow-500
-                  @else text-red-500
-                  @endif">
-                  {{ ucfirst($txn->status) }}
-                </p>
+              <!-- Amount & Status & Action -->
+              <div class="flex items-center gap-4">
+                <div class="text-right">
+                  <p class="font-semibold text-gray-900 dark:text-gray-100">
+                    {{ $isOutgoing ? '-' : '+' }}${{ number_format($txn->amount, 2) }}
+                  </p>
+                  <p class="text-sm 
+                    @if($txn->status == 'completed') text-green-600 dark:text-green-500
+                    @elseif($txn->status == 'pending') text-yellow-500
+                    @else text-red-500
+                    @endif">
+                    {{ ucfirst($txn->status) }}
+                  </p>
+                </div>
+                
+                @if($canAddBeneficiary && !$alreadyBeneficiary)
+                  <form action="{{ route('user.beneficiary.addFromTransaction', $txn->id) }}" method="POST" class="ml-2">
+                    @csrf
+                    <button type="submit" class="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 border border-blue-600 dark:border-blue-400 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors">
+                      <span class="material-symbols-outlined !text-base">person_add</span>
+                      Add to Beneficiary
+                    </button>
+                  </form>
+                @elseif($canAddBeneficiary && $alreadyBeneficiary)
+                  <span class="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-gray-500 dark:text-gray-400">
+                    <span class="material-symbols-outlined !text-base">check_circle</span>
+                    In Beneficiaries
+                  </span>
+                @endif
               </div>
             </div>
           @empty
             <p class="text-center text-gray-500 dark:text-gray-400 py-6">No transactions yet.</p>
           @endforelse
         </div>
+        <div class="mt-6">
+    {{ $transactions->links('pagination::tailwind') }}
+</div>
+
       </div>
     </div>
   </main>
@@ -148,3 +235,33 @@
 </body>
 </html>
 @endsection
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const filterForm = document.getElementById('filterForm');
+    if (!filterForm) {
+      console.warn('Filter form not found: ensure the form has id="filterForm"');
+      return;
+    }
+    const inputs = filterForm.querySelectorAll('select, input[type="date"]');
+
+    inputs.forEach(input => {
+      input.addEventListener('change', () => {
+        filterForm.submit();
+      });
+    });
+  });
+</script>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const exportBtn = document.getElementById('exportBtn');
+    const exportMenu = document.getElementById('exportMenu');
+
+    if (exportBtn && exportMenu) {
+        exportBtn.addEventListener('click', () => {
+            exportMenu.classList.toggle('hidden');
+        });
+    }
+  });
+</script>

@@ -22,13 +22,35 @@ class AuthenticatedSessionController extends Controller
     /**
      * Handle an incoming authentication request.
      */
-    public function store(LoginRequest $request): RedirectResponse
+    public function store(LoginRequest $request)
     {
-        $request->authenticate();
+         $request->authenticate();
 
-        $request->session()->regenerate();
+    $request->session()->regenerate();
 
-        return redirect()->intended(route('dashboard', absolute: false));
+    $user = auth()->user();
+
+    // Double-check if user is banned (safety measure, handle null status)
+    if ($user && $user->status && $user->status === 'banned') {
+        Auth::logout();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+        
+        return redirect()->route('login')->with('error', 'Your account has been banned. Please contact support for assistance.');
+    }
+
+    // Redirect based on role
+    if ($user->hasRole('Admin')) {
+        return redirect()->route('admin.dashboard');
+    }
+
+    if ($user->hasRole('Agent')) {
+        return redirect()->route('agent.dashboard');
+    }
+
+    if ($user->hasRole('User')) {
+        return redirect()->route('user.dashboard');
+    }
     }
 
     /**
