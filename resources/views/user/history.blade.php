@@ -138,8 +138,9 @@
     <span class="material-symbols-outlined !text-base">download</span> Export
   </button>
   <div id="exportMenu" class="hidden absolute mt-2 bg-white border rounded shadow">
-    <a href="{{ route('user.transactions', ['export' => 'pdf']) }}" class="block px-4 py-2 text-sm">PDF</a>
-    <a href="{{ route('user.transactions', ['export' => 'csv']) }}" class="block px-4 py-2 text-sm">CSV</a>
+<a href="{{ request()->fullUrlWithQuery(['export' => 'pdf']) }}" class="block px-4 py-2 text-sm">PDF</a>
+<a href="{{ request()->fullUrlWithQuery(['export' => 'csv']) }}" class="block px-4 py-2 text-sm">CSV</a>
+
   </div>
 </div>
 
