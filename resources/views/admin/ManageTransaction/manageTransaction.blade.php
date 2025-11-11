@@ -39,7 +39,6 @@
     <select name="wallet_status" class="mt-1 block w-full rounded-md border-gray-300 text-center">
       <option value="">All</option>
       <option value="completed" {{ request('wallet_status') == 'completed' ? 'selected' : '' }}>Completed</option>
-      <option value="pending" {{ request('wallet_status') == 'pending' ? 'selected' : '' }}>Pending</option>
       <option value="failed" {{ request('wallet_status') == 'failed' ? 'selected' : '' }}>Failed</option>
     </select>
   </div>
@@ -133,7 +132,7 @@
     <select name="person_status" class="mt-1 block w-full rounded-md border-gray-300 text-center">
       <option value="">All</option>
       <option value="completed" {{ request('person_status') == 'completed' ? 'selected' : '' }}>Completed</option>
-      <option value="pending" {{ request('person_status') == 'pending' ? 'selected' : '' }}>Pending</option>
+      <option value="In_progress" {{ request('person_status') == 'In_progress' ? 'selected' : '' }}>In_progress</option>
       <option value="failed" {{ request('person_status') == 'failed' ? 'selected' : '' }}>Failed</option>
     </select>
   </div>
