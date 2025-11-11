@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.app', ['noNav' => true])
 
 @section('content')
 <div class="flex h-screen">
