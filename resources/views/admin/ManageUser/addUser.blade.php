@@ -71,16 +71,60 @@
                     @enderror
                 </div>
 
-                <!-- Phone Number -->
+                <!-- Phone Number (+961 prefix) -->
                 <div class="mb-4">
-                    <label for="phone" class="block text-sm font-medium mb-1">Phone Number</label>
-                    <input type="text" name="phone" id="phone" placeholder="Enter phone number"
-                        value="{{ old('phone') }}"
-                        class="w-full px-4 py-2 border @error('phone') border-red-500 @else border-border-light @enderror rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
+                    <label for="phone" class="block text-sm font-medium mb-1">Phone Number (+961)</label>
+                    <div class="relative">
+                        <div id="admin-user-phone-group" class="inline-flex items-stretch w-full rounded-lg border border-gray-300 overflow-hidden focus-within:ring-2 focus-within:ring-primary bg-white">
+                            <span class="px-3 flex items-center bg-gray-50 text-gray-500 text-sm select-none">+961</span>
+                            <input type="text" name="phone" id="phone" placeholder="Enter 8 digits"
+                                value="{{ old('phone') }}"
+                                pattern="^\d{8}$"
+                                maxlength="8"
+                                inputmode="numeric"
+                                class="flex-1 px-3 py-2.5 outline-none border-0 focus:ring-0 @error('phone') ring-2 ring-red-500 @enderror">
+                            <span id="phone-status" class="material-symbols-outlined mr-3 self-center text-lg hidden">check_circle</span>
+                        </div>
+                    </div>
                     @error('phone')
                         <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
                     @enderror
                 </div>
+                <script>
+                    (function () {
+                        const input = document.getElementById('phone');
+                        const statusIcon = document.getElementById('phone-status');
+                        const group = document.getElementById('admin-user-phone-group');
+                        if (!input) return;
+                        function updateState() {
+                            const valid = /^\d{8}$/.test(input.value);
+                            group?.classList.remove('ring-2','ring-red-500','ring-green-500','focus:ring-red-500','focus:ring-green-500');
+                            if (input.value.length === 0) {
+                                statusIcon?.classList.add('hidden');
+                                return;
+                            }
+                            if (valid) {
+                                group?.classList.add('ring-2','ring-green-500','focus:ring-green-500');
+                                if (statusIcon) {
+                                    statusIcon.textContent = 'check_circle';
+                                    statusIcon.classList.remove('hidden');
+                                    statusIcon.classList.remove('text-red-500');
+                                    statusIcon.classList.add('text-green-500');
+                                }
+                            } else {
+                                group?.classList.add('ring-2','ring-red-500','focus:ring-red-500');
+                                if (statusIcon) {
+                                    statusIcon.textContent = 'error';
+                                    statusIcon.classList.remove('hidden');
+                                    statusIcon.classList.remove('text-green-500');
+                                    statusIcon.classList.add('text-red-500');
+                                }
+                            }
+                        }
+                        input.addEventListener('input', updateState);
+                        updateState();
+                    })();
+                </script>
 
                     <!-- Submit Button -->
                     <div class="flex justify-between mt-4">

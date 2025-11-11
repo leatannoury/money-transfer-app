@@ -14,6 +14,8 @@ return new class extends Migration
         Schema::create('beneficiaries', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->onDelete('cascade'); // owner
+            $table->foreignId('beneficiary_user_id')->nullable()->constrained('users')->onDelete('cascade');
+
         $table->string('full_name');
         $table->string('payout_method'); //  'wallet', 'cash_pickup'
         $table->string('account_number')->nullable();

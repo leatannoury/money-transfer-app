@@ -32,13 +32,17 @@ class RegisteredUserController extends Controller
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
-            'phone' => ['required', 'string', 'max:50', 'unique:'.User::class],
+            // Lebanese phone: exactly 8 digits (UI shows +961 prefix)
+            'phone' => ['required', 'string', 'regex:/^\d{8}$/', 'unique:'.User::class],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
+        ], [
+            'phone.regex' => 'Enter exactly 8 digits.',
         ]);
 
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
+            // Store only the 8 digits (no +961)
             'phone' => $request->phone,
             'password' => Hash::make($request->password),
         ]);

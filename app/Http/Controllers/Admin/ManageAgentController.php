@@ -49,15 +49,19 @@ public function storeAgent(Request $request) {
         'name' => 'required|string|max:255',
         'email' => 'required|email|unique:users,email',
         'password' => 'required|confirmed|min:6',
-        'phone' => 'required|string|max:20',
+        // Lebanese phone: exactly 8 digits (UI shows +961 prefix)
+        'phone' => ['required','string','regex:/^\d{8}$/','unique:users,phone'],
         'city' => 'required|string|max:20',  
         'commission' => 'required|numeric|min:0',
+    ], [
+        'phone.regex' => 'Enter exactly 8 digits.',
     ]);
 
     $user = User::create([
         'name' => $request->name,
         'email' => $request->email,
         'password' => $request->password,
+        // Store only the 8 digits (no +961)
         'phone' => $request->phone,
         'city'=>$request->city,
         'commission'=>$request->commission,
@@ -83,12 +87,16 @@ public function updateAgent(Request $request, $id)
     $request->validate([
         'name' => 'required|string|max:255',
         'email' => 'required|email|unique:users,email,'.$user->id,
-        'phone' => 'required|string|max:20',
+        // Lebanese phone: exactly 8 digits (UI shows +961 prefix)
+        'phone' => ['required','string','regex:/^\d{8}$/','unique:users,phone,'.$user->id],
         'password' => 'nullable|confirmed|min:6',
+    ], [
+        'phone.regex' => 'Enter exactly 8 digits.',
     ]);
 
     $user->name = $request->name;
     $user->email = $request->email;
+    // Store only the 8 digits (no +961)
     $user->phone = $request->phone;
 
     if ($request->filled('password')) {
