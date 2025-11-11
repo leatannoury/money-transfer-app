@@ -57,11 +57,22 @@
         </div>
       @endif
 
-      @if(session('error'))
-        <div class="mb-6 p-4 rounded-lg bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300">
-          {{ session('error') }}
-        </div>
-      @endif
+     @if($errors->any())
+  <div class="mb-6 p-4 rounded-lg bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300">
+    <ul class="list-disc pl-5">
+      @foreach($errors->all() as $error)
+        <li>{{ $error }}</li>
+      @endforeach
+    </ul>
+  </div>
+@endif
+
+@if(session('error'))
+  <div class="mb-6 p-4 rounded-lg bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300">
+    {{ session('error') }}
+  </div>
+@endif
+
 
       @if(session('success'))
         <div class="mb-6 p-4 rounded-lg bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300">
