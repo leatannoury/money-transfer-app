@@ -53,17 +53,7 @@
 <body class="font-display bg-background-light dark:bg-background-dark text-text-light dark:text-text-dark min-h-screen flex flex-col">
 
     <!-- Redirect Logged-In Users -->
-    @auth
-        @php
-            if (Auth::user()->role === 'admin') {
-                header('Location: ' . route('admin.dashboard'));
-                exit;
-            } else {
-                header('Location: ' . route('user.dashboard'));
-                exit;
-            }
-        @endphp
-    @endauth
+  
 
    
     <main class="flex-1">

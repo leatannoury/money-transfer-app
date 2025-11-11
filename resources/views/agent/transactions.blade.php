@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.app', ['noNav' => true])
 
 @section('content')
 <!DOCTYPE html>
@@ -51,13 +51,28 @@
       </nav>
     </div>
 
-    <div class="flex items-center gap-3">
-      <div class="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700"></div>
-      <div>
-        <p class="font-semibold text-gray-900 dark:text-gray-100">{{ Auth::user()->name }}</p>
-        <p class="text-sm text-gray-500 dark:text-gray-400">{{ Auth::user()->email }}</p>
-      </div>
+     <div class="flex items-center gap-3">
+  <!-- Avatar -->
+  <div class="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700"></div>
+
+  <!-- User Info and Logout -->
+  <div class="flex flex-col gap-2">
+    <div>
+      <p class="font-semibold text-gray-900 dark:text-gray-100">{{ Auth::user()->name }}</p>
+      <p class="text-sm text-gray-500 dark:text-gray-400">{{ Auth::user()->email }}</p>
     </div>
+
+    <!-- Logout Button -->
+    <form method="POST" action="{{ route('logout') }}">
+      @csrf
+      <button type="submit" class="flex items-center gap-2 px-3 py-2 rounded-lg bg-red-100 text-red-700 hover:bg-red-200 transition">
+        <img src="{{ asset('images/logout-svgrepo-com.svg') }}" class="h-5 w-5" alt="Logout Icon" />
+
+        <span class="text-sm font-medium">Log Out</span>
+      </button>
+    </form>
+  </div>
+</div>
   </aside>
 
   <!-- Main Content -->

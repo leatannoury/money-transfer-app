@@ -2,16 +2,46 @@
 
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\AgentController;
+use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\SocialAuthController;
 
 
 Route::get('/', function () {
-    return view('welcome');
+     $user = Auth::user();
+     if(!$user){
+          return view('welcome');
+     }
+    if ($user->hasRole('Admin')) {
+        return redirect()->route('admin.dashboard');
+    }
+
+    if ($user->hasRole('Agent')) {
+        return redirect()->route('agent.dashboard');
+    }
+
+    if ($user->hasRole('User')) {
+        return redirect()->route('user.dashboard');
+    }
+
+  
 });
 
 Route::get('/dashboard', function () {
-    return view('dashboard');
+     $user = Auth::user();
+     
+    if ($user->hasRole('Admin')) {
+        return redirect()->route('admin.dashboard');
+    }
+
+    if ($user->hasRole('Agent')) {
+        return redirect()->route('agent.dashboard');
+    }
+
+    if ($user->hasRole('User')) {
+        return redirect()->route('user.dashboard');
+    }
+
+
 })->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware('auth')->group(function () {
