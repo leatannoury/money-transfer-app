@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.app', ['noNav' => true])
 
 @section('content')
 <html class="light" lang="en">
@@ -90,16 +90,28 @@
         </ul>
       </nav>
 
-      <div class="p-4 border-t border-border-light dark:border-border-dark">
-        <div class="flex items-center gap-3">
-          <div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10"
-               style="background-image:url('https://i.pravatar.cc/100?img=68');"></div>
-          <div>
-            <h2 class="text-sm font-semibold">{{ Auth::user()->name }}</h2>
-            <p class="text-xs text-gray-500">{{Auth::user()->email}}</p>
-          </div>
-        </div>
-      </div>
+      <div class="flex items-center gap-3">
+  <!-- Avatar -->
+  <div class="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700"></div>
+
+  <!-- User Info and Logout -->
+  <div class="flex flex-col gap-2">
+    <div>
+      <p class="font-semibold text-gray-900 dark:text-gray-100">{{ Auth::user()->name }}</p>
+      <p class="text-sm text-gray-500 dark:text-gray-400">{{ Auth::user()->email }}</p>
+    </div>
+
+    <!-- Logout Button -->
+    <form method="POST" action="{{ route('logout') }}">
+      @csrf
+      <button type="submit" class="flex items-center gap-2 px-3 py-2 rounded-lg bg-red-100 text-red-700 hover:bg-red-200 transition">
+        <img src="{{ asset('images/logout-svgrepo-com.svg') }}" class="h-5 w-5" alt="Logout Icon" />
+
+        <span class="text-sm font-medium">Log Out</span>
+      </button>
+    </form>
+  </div>
+</div>
     </aside>
 
     <!-- Main Content -->

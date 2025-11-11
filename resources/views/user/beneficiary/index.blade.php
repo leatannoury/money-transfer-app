@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.app', ['noNav' => true])
 
 @section('content')
 <div class="p-8 max-w-4xl mx-auto">
