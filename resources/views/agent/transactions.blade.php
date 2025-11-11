@@ -1,128 +1,153 @@
+@extends('layouts.app')
+
+@section('content')
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="light">
 <head>
-    <meta charset="UTF-8">
-    <title>Agent Transactions</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background: #f8f9fa;
-            padding: 30px;
-            color: #333;
-        }
-        h1 {
-            color: #222;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            background: white;
-            margin-top: 20px;
-            border-radius: 8px;
-            overflow: hidden;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        }
-        th, td {
-            padding: 12px;
-            border: 1px solid #ddd;
-            text-align: center;
-        }
-        th {
-            background: #f0f0f0;
-        }
-        .btn {
-            padding: 8px 14px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            color: white;
-            font-size: 14px;
-        }
-        .btn-accept { background-color: #007bff; }
-        .btn-complete { background-color: #28a745; }
-        .btn-disabled { background-color: #aaa; cursor: not-allowed; }
-        .status {
-            font-weight: bold;
-            text-transform: capitalize;
-        }
-        .status.pending { color: #ff9800; }
-        .status.in_progress { color: #2196f3; }
-        .status.completed { color: #4caf50; }
-        .success, .error {
-            padding: 10px;
-            border-radius: 5px;
-            margin-bottom: 15px;
-            font-weight: bold;
-        }
-        .success { background-color: #d4edda; color: #155724; }
-        .error { background-color: #f8d7da; color: #721c24; }
-        a {
-            text-decoration: none;
-            color: #007bff;
-        }
-    </style>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Agent Transactions - Transferly</title>
+
+  {{-- Tailwind & Fonts --}}
+  <script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
+
+  <script>
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            primary: "#000000",
+            "background-light": "#f7f7f7",
+            "background-dark": "#191919"
+          },
+          fontFamily: { display: "Manrope" },
+        },
+      },
+    }
+  </script>
 </head>
-<body>
 
-    <h1>Welcome, {{ $agent->name }}</h1>
-    <h2>My Transactions</h2>
+<body class="font-display bg-background-light dark:bg-background-dark text-gray-900 dark:text-gray-100">
+<div class="flex h-screen">
+  <!-- Sidebar -->
+  <aside class="w-64 bg-background-light dark:bg-background-dark p-6 flex flex-col justify-between border-r border-gray-200 dark:border-gray-800">
+    <div>
+      <div class="flex items-center gap-3 mb-12">
+        <div class="w-8 h-8 bg-primary rounded-full"></div>
+        <span class="font-bold text-xl">Transferly</span>
+      </div>
+      <nav class="flex flex-col gap-2">
+        <a href="{{ route('agent.dashboard') }}" class="flex items-center gap-3 p-3 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-800">
+          <span class="material-symbols-outlined">dashboard</span>
+          <span>Dashboard</span>
+        </a>
+        <a href="{{ route('agent.transactions') }}" class="flex items-center gap-3 p-3 rounded-lg bg-gray-200 dark:bg-gray-800 text-black dark:text-white font-semibold">
+          <span class="material-symbols-outlined">receipt_long</span>
+          <span>Transactions</span>
+        </a>
+      </nav>
+    </div>
 
-    {{-- Flash messages --}}
-    @if(session('success'))
-        <div class="success">{{ session('success') }}</div>
-    @elseif(session('error'))
-        <div class="error">{{ session('error') }}</div>
-    @endif
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700"></div>
+      <div>
+        <p class="font-semibold text-gray-900 dark:text-gray-100">{{ Auth::user()->name }}</p>
+        <p class="text-sm text-gray-500 dark:text-gray-400">{{ Auth::user()->email }}</p>
+      </div>
+    </div>
+  </aside>
 
-    @if($transactions->isEmpty())
-        <p>No transactions available.</p>
-    @else
-        <table>
-            <thead>
+  <!-- Main Content -->
+  <main class="flex-1 overflow-y-auto">
+    <header class="flex h-20 items-center justify-between border-b border-[#CCCCCC] px-8 dark:border-white/20">
+      <h1 class="text-2xl font-bold text-black dark:text-white">Agent Transactions</h1>
+      <a href="{{ route('agent.dashboard') }}" class="text-sm font-semibold text-black dark:text-white underline hover:opacity-70">
+        ← Back to Dashboard
+      </a>
+    </header>
+
+    <div class="p-8">
+      <div class="mx-auto max-w-6xl">
+
+        @if(session('success'))
+          <div class="bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200 p-4 rounded-lg mb-6">
+            {{ session('success') }}
+          </div>
+        @elseif(session('error'))
+          <div class="bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200 p-4 rounded-lg mb-6">
+            {{ session('error') }}
+          </div>
+        @endif
+
+        <h2 class="text-3xl font-bold mb-6 text-black dark:text-white">Welcome, {{ $agent->name }}</h2>
+
+        @if($transactions->isEmpty())
+          <p class="text-gray-600 dark:text-gray-400 text-lg">No transactions available.</p>
+        @else
+          <div class="overflow-x-auto bg-white dark:bg-gray-900 border border-gray-200 dark:border-white/10 rounded-xl shadow-sm">
+            <table class="min-w-full text-sm text-left text-gray-700 dark:text-gray-200">
+              <thead class="bg-gray-100 dark:bg-gray-800 uppercase text-xs tracking-wider">
                 <tr>
-                    <th>ID</th>
-                    <th>Sender</th>
-                    <th>Receiver</th>
-                    <th>Amount</th>
-                    <th>Currency</th>
-                    <th>Status</th>
-                    <th>Action</th>
-                    <th>Created At</th>
+                  <th class="px-6 py-3">ID</th>
+                  <th class="px-6 py-3">Sender</th>
+                  <th class="px-6 py-3">Receiver</th>
+                  <th class="px-6 py-3">Amount</th>
+                  <th class="px-6 py-3">Currency</th>
+                  <th class="px-6 py-3">Status</th>
+                  <th class="px-6 py-3">Action</th>
+                  <th class="px-6 py-3">Created At</th>
                 </tr>
-            </thead>
-            <tbody>
+              </thead>
+              <tbody>
                 @foreach($transactions as $tx)
-                    <tr>
-                        <td>{{ $tx->id }}</td>
-                        <td>{{ $tx->sender->name ?? 'N/A' }}</td>
-                        <td>{{ $tx->receiver->name ?? 'N/A' }}</td>
-                        <td>{{ $tx->amount }}</td>
-                        <td>{{ $tx->currency }}</td>
-                        <td class="status {{ $tx->status }}">{{ ucfirst(str_replace('_', ' ', $tx->status)) }}</td>
-                        <td>
-                            @if($tx->status === 'pending')
-                                <form action="{{ route('agent.accept', $tx->id) }}" method="POST" style="display:inline;">
-                                    @csrf
-                                    <button type="submit" class="btn btn-accept">Accept</button>
-                                </form>
-                            @elseif($tx->status === 'in_progress' && $tx->agent_id === $agent->id)
-                                <form action="{{ route('agent.complete', $tx->id) }}" method="POST" style="display:inline;">
-                                    @csrf
-                                    <button type="submit" class="btn btn-complete">Complete</button>
-                                </form>
-                            @else
-                                <button class="btn btn-disabled" disabled>No Action</button>
-                            @endif
-                        </td>
-                        <td>{{ $tx->created_at->format('Y-m-d H:i') }}</td>
-                    </tr>
+                  <tr class="border-b border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/40">
+                    <td class="px-6 py-3">{{ $tx->id }}</td>
+                    <td class="px-6 py-3">{{ $tx->sender->name ?? 'N/A' }}</td>
+                    <td class="px-6 py-3">{{ $tx->receiver->name ?? 'N/A' }}</td>
+                    <td class="px-6 py-3 font-semibold">${{ number_format($tx->amount, 2) }}</td>
+                    <td class="px-6 py-3">{{ $tx->currency }}</td>
+                    <td class="px-6 py-3">
+                      <span class="
+                        px-3 py-1 rounded-full text-xs font-semibold
+                        @if($tx->status === 'pending') bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400
+                        @elseif($tx->status === 'in_progress') bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400
+                        @elseif($tx->status === 'completed') bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400
+                        @else bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400
+                        @endif">
+                        {{ ucfirst(str_replace('_', ' ', $tx->status)) }}
+                      </span>
+                    </td>
+                    <td class="px-6 py-3">
+                      @if($tx->status === 'pending')
+                        <form action="{{ route('agent.accept', $tx->id) }}" method="POST">
+                          @csrf
+                          <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-xs font-semibold">Accept</button>
+                        </form>
+                      @elseif($tx->status === 'in_progress' && $tx->agent_id === $agent->id)
+                        <form action="{{ route('agent.complete', $tx->id) }}" method="POST">
+                          @csrf
+                          <button type="submit" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-xs font-semibold">Complete</button>
+                        </form>
+                      @else
+                        <button class="bg-gray-400 text-white px-4 py-2 rounded-lg text-xs font-semibold cursor-not-allowed" disabled>No Action</button>
+                      @endif
+                    </td>
+                    <td class="px-6 py-3 text-sm text-gray-600 dark:text-gray-400">
+                      {{ $tx->created_at ? $tx->created_at->format('Y-m-d H:i') : 'N/A' }}
+                    </td>
+                  </tr>
                 @endforeach
-            </tbody>
-        </table>
-    @endif
-
-    <br>
-    <a href="{{ route('agent.dashboard') }}">⬅ Back to Dashboard</a>
-
+              </tbody>
+            </table>
+          </div>
+        @endif
+      </div>
+    </div>
+  </main>
+</div>
 </body>
 </html>
+@endsection
