@@ -12,14 +12,17 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('transactions', function (Blueprint $table) {
-        $table->id();
-        $table->foreignId('sender_id')->constrained('users')->onDelete('cascade');
-        $table->foreignId('receiver_id')->constrained('users')->onDelete('cascade');
-        $table->decimal('amount', 10, 2);
-        $table->string('currency')->default('USD');
-        $table->string('status')->default('completed'); // or pending, failed
-        $table->timestamps();
-        });
+    $table->id();
+    $table->foreignId('sender_id')->constrained('users')->onDelete('cascade');
+    $table->foreignId('receiver_id')->constrained('users')->onDelete('cascade');
+    $table->decimal('amount', 10, 2);
+    $table->string('currency')->default('USD');
+    $table->enum('service_type', ['wallet_to_wallet', 'transfer_via_agent']);
+    $table->foreignId('agent_id')->nullable()->constrained('users')->nullOnDelete(); // only once
+    $table->enum('status', ['completed', 'failed', 'pending_agent', 'in_progress'])->default('completed');
+    $table->timestamps();
+});
+
     }
 
     /**

@@ -17,9 +17,12 @@ class TransactionController extends Controller
     {
         $agent = Auth::user();
 
-        // Agent can see transactions assigned to them OR pending ones
-        $transactions = Transaction::where('status', 'pending')
-            ->orWhere('agent_id', $agent->id)
+        // Agent can see transactions assigned to them OR pending ones (pending_agent status)
+        $transactions = Transaction::where('service_type', 'transfer_via_agent') // Only show agent-required transactions
+            ->where(function($query) use ($agent) {
+                $query->where('status', 'pending_agent')
+                      ->orWhere('agent_id', $agent->id);
+            })
             ->orderBy('created_at', 'desc')
             ->get();
 
@@ -34,7 +37,7 @@ class TransactionController extends Controller
         $agent = Auth::user();
         $transaction = Transaction::findOrFail($id);
 
-        if ($transaction->status !== 'pending') {
+        if ($transaction->status !== 'pending_agent') {
             return back()->with('error', 'This transaction is no longer available.');
         }
 
