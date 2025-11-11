@@ -3,43 +3,8 @@
 @section('content')
 <div class="flex h-screen">
   <!-- Sidebar -->
-  <aside class="w-64 bg-background-light dark:bg-background-dark p-6 flex flex-col justify-between border-r border-gray-200 dark:border-gray-800">
-    <div>
-      <div class="flex items-center gap-3 mb-12">
-        <div class="w-8 h-8 bg-primary rounded-full"></div>
-        <span class="font-bold text-xl">Transferly</span>
-      </div>
-      <nav class="flex flex-col gap-2">
-        <a href="{{ route('user.dashboard') }}" class="flex items-center gap-3 p-3 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-800">
-          <span class="material-symbols-outlined">dashboard</span>
-          <span>Dashboard</span>
-        </a>
-        <a href="{{ route('user.transactions') }}" class="flex items-center gap-3 p-3 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-800">
-          <span class="material-symbols-outlined">receipt_long</span>
-          <span>Transactions</span>
-        </a>
-        <a href="{{ route('user.transfer') }}" class="flex items-center gap-3 p-3 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-800">
-          <span class="material-symbols-outlined">north_east</span>
-          <span>Send Money</span>
-        </a>
-        <a href="{{ route('user.beneficiary.index') }}" class="flex items-center gap-3 p-3 rounded-lg bg-gray-200 dark:bg-gray-800 text-gray-900 dark:text-gray-100">
-          <span class="material-symbols-outlined">people</span>
-          <span>Beneficiaries</span>
-        </a>
-        <a href="#" class="flex items-center gap-3 p-3 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-800">
-          <span class="material-symbols-outlined">settings</span>
-          <span>Settings</span>
-        </a>
-      </nav>
-    </div>
+@include('components.user-sidebar')
 
-    <div class="flex items-center gap-3">
-      <div>
-        <p class="font-semibold text-gray-900 dark:text-gray-100">{{ Auth::user()->name }}</p>
-        <p class="text-sm text-gray-500 dark:text-gray-400">{{ Auth::user()->email }}</p>
-      </div>
-    </div>
-  </aside>
   <!-- Main Content -->
   <main class="flex-1">
     <header class="flex h-20 items-center justify-end border-b border-[#CCCCCC] px-8 dark:border-white/20">
