@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Transaction extends Model
 {
-    protected $fillable = ['sender_id', 'receiver_id','agent_id', 'amount', 'currency', 'status'];
+    protected $fillable = ['sender_id', 'receiver_id','agent_id', 'amount', 'currency', 'status', 'service_type'];
 
     public function sender()
     {

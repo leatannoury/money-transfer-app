@@ -12,8 +12,8 @@ class ManageAgentController extends Controller
 {
 
 public function  manageAgents(){
-    $totalUsers = User::role('agent')->count();
-       $users = User::role('agent')->select('id','name','email','phone','status','city','commission')->get();
+    $totalUsers = User::role('Agent')->count();
+       $users = User::role('Agent')->select('id','name','email','phone','status','city','commission')->get();
     return view('admin.ManageAgent.manageAgent', compact('totalUsers', 'users'));
 
  
@@ -68,7 +68,7 @@ public function storeAgent(Request $request) {
         'status' => 'active',
     ]);
 
-    $user->assignRole('agent'); 
+    $user->assignRole('Agent'); 
 
     return redirect()->route('admin.agents')->with('success', 'User added successfully.');
 }
