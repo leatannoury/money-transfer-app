@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.app', ['noNav' => true])
 
 @section('content')
 <html class="light" lang="en">
