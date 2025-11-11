@@ -48,7 +48,7 @@ class TransactionController extends Controller
     }
 
     /**
-     * Mark a transaction as completed
+     * Mark a transaction as completed and update balances
      */
     public function complete($id)
     {
@@ -61,11 +61,32 @@ class TransactionController extends Controller
             return back()->with('error', 'You can only complete transactions in progress.');
         }
 
+        // Fetch sender and receiver
+        $sender = $transaction->sender;
+        $receiver = $transaction->receiver;
+
+        if (!$sender || !$receiver) {
+            return back()->with('error', 'Transaction sender or receiver not found.');
+        }
+
+        // Check sender balance
+        if ($sender->balance < $transaction->amount) {
+            return back()->with('error', 'Sender does not have enough balance.');
+        }
+
+        // ✅ Update balances
+        $sender->balance -= $transaction->amount;
+        $receiver->balance += $transaction->amount;
+
+        $sender->save();
+        $receiver->save();
+
+        // ✅ Mark transaction as completed
         $transaction->status = 'completed';
         $transaction->save();
 
         Log::info("Transaction #{$transaction->id} completed by agent #{$agent->id}");
 
-        return back()->with('success', 'Transaction marked as completed.');
+        return back()->with('success', 'Transaction completed successfully! Balances updated.');
     }
 }
