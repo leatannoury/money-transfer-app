@@ -77,6 +77,39 @@
         <!-- Static Table -->
         <div class="@container">
           <div class="overflow-hidden rounded-xl border border-border-light dark:border-border-dark bg-card-light dark:bg-card-dark">
+            <form method="GET" action="{{ url()->current() }}" class="mb-6 grid grid-cols-1 md:grid-cols-5 gap-4 max-w-6xl mx-auto items-end">
+
+  <div class="flex flex-col items-center">
+    <label class="text-sm font-medium text-center">Email</label>
+    <input type="text" name="email" value="{{ request('email') }}" placeholder="example@email.com"
+           class="mt-1 block w-full rounded-md border-gray-300 text-center">
+  </div>
+
+  <div class="flex flex-col items-center">
+    <label class="text-sm font-medium text-center">Phone</label>
+    <input type="text" name="phone" value="{{ request('phone') }}" placeholder="961..."
+           class="mt-1 block w-full rounded-md border-gray-300 text-center">
+  </div>
+
+  <div class="flex flex-col items-center">
+    <label class="text-sm font-medium text-center">Status</label>
+    <select name="status" class="mt-1 block w-full rounded-md border-gray-300 text-center">
+      <option value="">All</option>
+      <option value="active" {{ request('status') == 'active' ? 'selected' : '' }}>Active</option>
+      <option value="banned" {{ request('status') == 'banned' ? 'selected' : '' }}>Banned</option>
+    </select>
+  </div>
+
+  <div class="flex justify-center items-center md:col-span-2">
+    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition">
+      Filter
+    </button>
+    <a href="{{ url()->current() }}" class="ml-2 px-4 py-2 bg-gray-300 text-gray-800 rounded-md hover:bg-gray-400 transition">
+      Reset
+    </a>
+  </div>
+
+</form>
             <table class="w-full">
               <thead class="bg-background-light dark:bg-background-dark">
                 <tr>
@@ -139,6 +172,9 @@
           @endforelse
         </tbody>
             </table>
+            <div class="p-4 flex justify-center">
+              {{ $users->links('pagination::tailwind') }}
+            </div>
           </div>
         </div>
       </div>
