@@ -107,28 +107,28 @@ class BeneficiaryController extends Controller
     {
         $transaction = Transaction::findOrFail($transaction);
         
-        // Check if the transaction belongs to the authenticated user and is an outgoing transaction
-        if ($transaction->sender_id != auth()->id()) {
-            return redirect()->route('user.transactions')->with('error', 'You can only add beneficiaries from your own outgoing transactions.');
+        // Check if the transaction belongs to the authenticated user
+        if ($transaction->sender_id != auth()->id() && $transaction->receiver_id != auth()->id()) {
+            return redirect()->route('user.transactions')->with('error', 'You can only add beneficiaries from your own transactions.');
         }
 
-        // Check if transaction is completed
-        if ($transaction->status !== 'completed') {
-            return redirect()->route('user.transactions')->with('error', 'You can only add beneficiaries from completed transactions.');
-        }
-
-        // Get the receiver user
-        $receiver = $transaction->receiver;
+        // Determine the other party (receiver for outgoing, sender for incoming)
+        $isOutgoing = $transaction->sender_id == auth()->id();
+        $otherParty = $isOutgoing ? $transaction->receiver : $transaction->sender;
         
-        if (!$receiver) {
-            return redirect()->route('user.transactions')->with('error', 'Receiver information not found.');
+        if (!$otherParty) {
+            return redirect()->route('user.transactions')->with('error', 'Other party information not found.');
         }
 
-        // Check if beneficiary already exists for this user with the same name or email
+        // Check if beneficiary already exists for this user with the same name or phone
         $existingBeneficiary = Beneficiary::where('user_id', auth()->id())
-            ->where(function($query) use ($receiver) {
-                $query->where('full_name', $receiver->name)
-                      ->orWhere('phone_number', $receiver->phone);
+            ->where(function($query) use ($otherParty) {
+                $query->where('full_name', $otherParty->name)
+                      ->orWhere(function($q) use ($otherParty) {
+                          if ($otherParty->phone) {
+                              $q->where('phone_number', $otherParty->phone);
+                          }
+                      });
             })
             ->first();
 
@@ -139,11 +139,11 @@ class BeneficiaryController extends Controller
         // Create beneficiary with available information
         Beneficiary::create([
             'user_id' => auth()->id(),
-            'full_name' => $receiver->name,
+            'full_name' => $otherParty->name,
             'payout_method' => 'wallet', // Default value, user can edit later
             'account_number' => null,
-            'phone_number' => $receiver->phone ?? null,
-            'address' => $receiver->city ?? null,
+            'phone_number' => $otherParty->phone ?? null,
+            'address' => $otherParty->city ?? null,
         ]);
 
         return redirect()->route('user.transactions')->with('success', 'Beneficiary added successfully!');

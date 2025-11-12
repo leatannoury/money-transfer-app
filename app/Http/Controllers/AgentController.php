@@ -30,28 +30,59 @@ class AgentController extends Controller
         $request->validate([
             'phone' => 'nullable|string|max:20',
             'city' => 'nullable|string|max:255',
-            'commission' => 'nullable|numeric|min:0',
+            'commission' => 'nullable|numeric|min:0|max:100',
             'work_start_time' => 'nullable|date_format:H:i',
             'work_end_time' => 'nullable|date_format:H:i',
+            'is_available' => 'nullable|boolean',
+        ], [
+            'commission.max' => 'Commission cannot exceed 100%.',
+            'work_start_time.date_format' => 'Work start time must be in HH:MM format.',
+            'work_end_time.date_format' => 'Work end time must be in HH:MM format.',
         ]);
 
         /** @var \App\Models\User $agent */
         $agent = Auth::user();
 
-        // Update profile fields
+        // Update profile fields only if they are provided
+        if ($request->filled('phone')) {
         $agent->phone = $request->phone;
+        }
+        
+        if ($request->filled('city')) {
         $agent->city = $request->city;
+        } elseif ($request->has('city') && $request->city === '') {
+            // Allow clearing the city field
+            $agent->city = null;
+        }
+        
+        if ($request->filled('commission')) {
         $agent->commission = $request->commission;
+        }
+        
+        if ($request->filled('work_start_time')) {
         $agent->work_start_time = $request->work_start_time;
+        }
+        
+        if ($request->filled('work_end_time')) {
         $agent->work_end_time = $request->work_end_time;
-        $agent->status = $agent->status ?? 'active';
+        }
+        
+        // Ensure status is set
+        if (!$agent->status) {
+            $agent->status = 'active';
+        }
+        
+        // Handle availability toggle if provided
+        if ($request->has('is_available')) {
+            $agent->is_available = $request->boolean('is_available');
+        }
 
         // --- Auto Fetch Latitude & Longitude based on City ---
-        if (!empty($request->city)) {
+        if ($request->filled('city')) {
             try {
                 $response = Http::withHeaders([
                     'User-Agent' => 'LaravelApp/1.0 (contact@example.com)',
-                ])->get('https://nominatim.openstreetmap.org/search', [
+                ])->timeout(5)->get('https://nominatim.openstreetmap.org/search', [
                     'q' => $request->city . ', Lebanon',
                     'format' => 'json',
                     'limit' => 1,
@@ -59,15 +90,21 @@ class AgentController extends Controller
 
                 $data = $response->json();
 
-                if (!empty($data[0])) {
+                if (!empty($data) && !empty($data[0])) {
                     $agent->latitude = $data[0]['lat'];
                     $agent->longitude = $data[0]['lon'];
                 } else {
                     Log::warning('City not found in geocoding: ' . $request->city);
+                    // Don't clear existing coordinates if geocoding fails
                 }
             } catch (\Exception $e) {
                 Log::error('Geocoding failed: ' . $e->getMessage());
+                // Don't clear existing coordinates if geocoding fails
             }
+        } elseif ($request->has('city') && $request->city === '') {
+            // If city is cleared, optionally clear coordinates too
+            // $agent->latitude = null;
+            // $agent->longitude = null;
         }
 
         $agent->save();
