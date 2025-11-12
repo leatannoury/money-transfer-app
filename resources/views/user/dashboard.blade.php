@@ -54,8 +54,27 @@
 
 <!-- Balance Display -->
 <div class="mt-8 flex flex-col gap-6 rounded-xl border border-[#CCCCCC] p-8 dark:border-white/20">
-<h1 class="text-black/60 dark:text-white/60 tracking-normal text-base font-medium text-left">Total Balance</h1>
-<p class="text-black dark:text-white text-5xl font-black tracking-tighter -mt-4">${{ number_format($user->balance, 2) }}</p>
+<div class="flex items-center justify-between">
+  <h1 class="text-black/60 dark:text-white/60 tracking-normal text-base font-medium text-left">Total Balance</h1>
+  <!-- Currency Selector -->
+  <form method="GET" action="{{ route('user.dashboard') }}" class="flex items-center gap-2">
+    <select name="currency" onchange="this.form.submit()" class="text-sm rounded-lg border border-[#CCCCCC] dark:border-white/20 dark:bg-gray-800 dark:text-white px-3 py-1.5 focus:ring-2 focus:ring-black dark:focus:ring-white">
+      @foreach($currencies as $code => $name)
+        <option value="{{ $code }}" {{ $selectedCurrency === $code ? 'selected' : '' }}>
+          {{ $code }} - {{ $name }}
+        </option>
+      @endforeach
+    </select>
+  </form>
+</div>
+<p class="text-black dark:text-white text-5xl font-black tracking-tighter -mt-4">
+  {{ \App\Services\CurrencyService::format($convertedBalance, $selectedCurrency) }}
+</p>
+@if($selectedCurrency !== 'USD')
+  <p class="text-sm text-black/60 dark:text-white/60 mt-1">
+    ≈ ${{ number_format($user->balance, 2) }} USD
+  </p>
+@endif
 
 <!-- Actions -->
 <div class="flex flex-1 gap-4 flex-wrap justify-start mt-2">
@@ -96,8 +115,12 @@
         </div>
     </div>
     <div class="text-right">
+        @php
+            $txnCurrency = $txn->currency ?? 'USD';
+            $convertedAmount = \App\Services\CurrencyService::convert($txn->amount, $selectedCurrency, $txnCurrency);
+        @endphp
         <p class="font-bold text-black dark:text-white">
-            {{ $txn->sender_id == $user->id ? '-' : '+' }}${{ number_format($txn->amount, 2) }}
+            {{ $txn->sender_id == $user->id ? '-' : '+' }}{{ \App\Services\CurrencyService::format($convertedAmount, $selectedCurrency) }}
         </p>
         <p class="text-sm {{ $txn->status == 'pending' ? 'text-yellow-600 dark:text-yellow-400' : 'text-black/60 dark:text-white/60' }}">
             {{ ucfirst($txn->status) }}
