@@ -74,6 +74,13 @@ public function beneficiaries()
 {
     return $this->hasMany(Beneficiary::class);
 }
+
+    // Review written by the user
+    public function review()
+    {
+        return $this->hasOne(Review::class);
+    }
+
     // Transactions processed by the agent
     public function processedTransactions()
     {
@@ -85,11 +92,32 @@ public function beneficiaries()
      */
     public function isCurrentlyAvailable(): bool
     {
-        if (!$this->is_available || !$this->work_start_time || !$this->work_end_time) {
+        // First check if availability is enabled
+        if (!$this->is_available) {
             return false;
         }
 
+        // Check if work hours are set
+        if (!$this->work_start_time || !$this->work_end_time) {
+            return false;
+        }
+
+        // Get current time in H:i:s format
         $currentTime = now()->format('H:i:s');
-        return $currentTime >= $this->work_start_time && $currentTime <= $this->work_end_time;
+        
+        // Ensure work times are in H:i:s format (they might be stored as H:i)
+        $startTime = $this->work_start_time;
+        $endTime = $this->work_end_time;
+        
+        // If work times don't have seconds, add :00
+        if (strlen($startTime) === 5) {
+            $startTime .= ':00';
+        }
+        if (strlen($endTime) === 5) {
+            $endTime .= ':00';
+        }
+        
+        // Compare times as strings (works because format is consistent)
+        return $currentTime >= $startTime && $currentTime <= $endTime;
     }
 }

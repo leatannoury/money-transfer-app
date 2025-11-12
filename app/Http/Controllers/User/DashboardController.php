@@ -17,7 +17,20 @@ public function index()
         ->take(5)
         ->get();
 
-    return view('user.dashboard', compact('user', 'transactions'));
+    // Get user's review if exists
+    $userReview = \App\Models\Review::where('user_id', $user->id)->first();
+    
+    // Get all reviews for display (latest first)
+    $reviews = \App\Models\Review::with('user')
+        ->orderBy('created_at', 'desc')
+        ->take(10)
+        ->get();
+    
+    // Get average rating and total reviews
+    $averageRating = \App\Models\Review::averageRating();
+    $totalReviews = \App\Models\Review::totalReviews();
+
+    return view('user.dashboard', compact('user', 'transactions', 'userReview', 'reviews', 'averageRating', 'totalReviews'));
 }
 
 }
