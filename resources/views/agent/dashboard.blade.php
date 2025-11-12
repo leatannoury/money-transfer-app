@@ -80,6 +80,16 @@
                   <span class="text-green-600 font-semibold">🟢 Available Now</span>
                 @else
                   <span class="text-red-600 font-semibold">🔴 Not Available</span>
+                  <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    @if(!$agent->is_available)
+                      • Availability toggle is OFF
+                    @endif
+                    @if(!$agent->work_start_time || !$agent->work_end_time)
+                      • Work hours not set
+                    @else
+                      • Current time: {{ now()->format('H:i:s') }} | Work hours: {{ $agent->work_start_time }} - {{ $agent->work_end_time }}
+                    @endif
+                  </div>
                 @endif
               </div>
             </div>
@@ -88,36 +98,78 @@
           <!-- Edit Profile -->
           <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-white/10 rounded-xl p-8 mb-8 shadow-sm">
             <h2 class="text-2xl font-bold mb-4">Edit Profile</h2>
+            
+            @if($errors->any())
+              <div class="mb-6 p-4 rounded-lg bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300">
+                <ul class="list-disc pl-5">
+                  @foreach($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                  @endforeach
+                </ul>
+              </div>
+            @endif
+            
             <form action="{{ route('agent.updateProfile') }}" method="POST" class="space-y-4">
               @csrf
               <div>
-                <label class="block text-gray-700 dark:text-gray-300">Phone</label>
-                <input type="text" name="phone" value="{{ old('phone', $agent->phone) }}" class="w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white">
+                <label class="block text-gray-700 dark:text-gray-300 mb-2">Phone</label>
+                <input type="text" name="phone" value="{{ old('phone', $agent->phone) }}" 
+                       class="w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white px-4 py-2 @error('phone') border-red-500 @enderror">
+                @error('phone')
+                  <p class="text-sm text-red-500 mt-1">{{ $message }}</p>
+                @enderror
               </div>
 
               <div>
-                <label class="block text-gray-700 dark:text-gray-300">City</label>
-                <input type="text" name="city" value="{{ old('city', $agent->city) }}" class="w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white">
+                <label class="block text-gray-700 dark:text-gray-300 mb-2">City</label>
+                <input type="text" name="city" value="{{ old('city', $agent->city) }}" 
+                       placeholder="Enter city name"
+                       class="w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white px-4 py-2 @error('city') border-red-500 @enderror">
+                @error('city')
+                  <p class="text-sm text-red-500 mt-1">{{ $message }}</p>
+                @enderror
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Location will be automatically updated based on city name</p>
               </div>
 
               <div>
-                <label class="block text-gray-700 dark:text-gray-300">Commission (%)</label>
-                <input type="number" step="0.1" name="commission" value="{{ old('commission', $agent->commission) }}" class="w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white">
+                <label class="block text-gray-700 dark:text-gray-300 mb-2">Commission (%)</label>
+                <input type="number" step="0.01" min="0" max="100" name="commission" value="{{ old('commission', $agent->commission) }}" 
+                       class="w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white px-4 py-2 @error('commission') border-red-500 @enderror">
+                @error('commission')
+                  <p class="text-sm text-red-500 mt-1">{{ $message }}</p>
+                @enderror
+              </div>
+
+              <div class="mb-4">
+                <label class="flex items-center gap-3 cursor-pointer">
+                  <input type="checkbox" name="is_available" value="1" {{ old('is_available', $agent->is_available) ? 'checked' : '' }} 
+                         class="w-5 h-5 text-primary border-gray-300 rounded focus:ring-primary dark:bg-gray-700 dark:border-gray-600">
+                  <span class="text-gray-700 dark:text-gray-300 font-medium">Set myself as available</span>
+                </label>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 ml-8">When enabled, you'll be shown as available during your work hours</p>
               </div>
 
               <div class="grid md:grid-cols-2 gap-4">
                 <div>
-                  <label class="block text-gray-700 dark:text-gray-300">Work Start Time</label>
-                  <input type="time" name="work_start_time" value="{{ old('work_start_time', $agent->work_start_time) }}" class="w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white">
+                  <label class="block text-gray-700 dark:text-gray-300 mb-2">Work Start Time</label>
+                  <input type="time" name="work_start_time" value="{{ old('work_start_time', $agent->work_start_time ? substr($agent->work_start_time, 0, 5) : '') }}" 
+                         class="w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white px-4 py-2 @error('work_start_time') border-red-500 @enderror">
+                  @error('work_start_time')
+                    <p class="text-sm text-red-500 mt-1">{{ $message }}</p>
+                  @enderror
                 </div>
 
                 <div>
-                  <label class="block text-gray-700 dark:text-gray-300">Work End Time</label>
-                  <input type="time" name="work_end_time" value="{{ old('work_end_time', $agent->work_end_time) }}" class="w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white">
+                  <label class="block text-gray-700 dark:text-gray-300 mb-2">Work End Time</label>
+                  <input type="time" name="work_end_time" value="{{ old('work_end_time', $agent->work_end_time ? substr($agent->work_end_time, 0, 5) : '') }}" 
+                         class="w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white px-4 py-2 @error('work_end_time') border-red-500 @enderror">
+                  @error('work_end_time')
+                    <p class="text-sm text-red-500 mt-1">{{ $message }}</p>
+                  @enderror
                 </div>
               </div>
 
-              <button type="submit" class="bg-black dark:bg-white dark:text-black text-white font-bold py-3 px-6 rounded-full hover:opacity-80">
+              <button type="submit" class="bg-black dark:bg-white dark:text-black text-white font-bold py-3 px-6 rounded-full hover:opacity-80 transition-opacity">
                 Save Changes
               </button>
             </form>
@@ -126,7 +178,18 @@
           <!-- Location -->
           <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-white/10 rounded-xl p-8 shadow-sm">
             <h2 class="text-2xl font-bold mb-4">My Location</h2>
-            <div id="map" class="h-96 rounded-lg border border-gray-300 dark:border-gray-700"></div>
+            @if($agent->latitude && $agent->longitude)
+              <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                📍 Location: {{ $agent->city ?? 'Unknown' }} 
+                ({{ number_format($agent->latitude, 6) }}, {{ number_format($agent->longitude, 6) }})
+              </p>
+            @else
+              <div class="mb-4 p-3 rounded-lg bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-300 text-sm">
+                <p class="font-semibold mb-1">⚠️ No location data</p>
+                <p>To set your location, enter a city name in the "Edit Profile" section above and save. The system will automatically fetch your coordinates.</p>
+              </div>
+            @endif
+            <div id="map" class="h-96 rounded-lg border border-gray-300 dark:border-gray-700 relative"></div>
           </div>
         @else
           <p>No agent profile found.</p>
@@ -138,17 +201,47 @@
 
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script>
+  // Initialize map centered on Lebanon
   var map = L.map('map').setView([33.8938, 35.5018], 8);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 18,
       attribution: '© OpenStreetMap'
   }).addTo(map);
 
-  var agent = JSON.parse(`{!! addslashes(json_encode($agent)) !!}`);
-  if (agent && agent.latitude && agent.longitude) {
-      var marker = L.marker([agent.latitude, agent.longitude]).addTo(map);
-      marker.bindPopup("<b>" + (agent.name ?? "My Profile") + "</b><br>" + (agent.city ?? ""));
-      map.setView([agent.latitude, agent.longitude], 12);
+  // Get agent data
+  var agent = @json($agent);
+  
+  // Check if agent has location data
+  var latitude = agent.latitude ? parseFloat(agent.latitude) : null;
+  var longitude = agent.longitude ? parseFloat(agent.longitude) : null;
+  
+  if (latitude && longitude && !isNaN(latitude) && !isNaN(longitude)) {
+      // Create marker for agent location
+      var marker = L.marker([latitude, longitude]).addTo(map);
+      
+      // Create popup content
+      var popupContent = '<div style="min-width: 150px;">';
+      popupContent += '<b>' + (agent.name || 'My Profile') + '</b><br>';
+      if (agent.city) {
+          popupContent += '<span style="color: #666;">📍 ' + agent.city + '</span><br>';
+      }
+      popupContent += '<span style="color: #666; font-size: 0.85em;">Lat: ' + latitude.toFixed(6) + ', Lng: ' + longitude.toFixed(6) + '</span>';
+      popupContent += '</div>';
+      
+      marker.bindPopup(popupContent);
+      
+      // Center map on agent location
+      map.setView([latitude, longitude], 12);
+      
+      console.log('Agent location marker added:', latitude, longitude);
+  } else {
+      // Show message if no location data
+      var noLocationDiv = document.createElement('div');
+      noLocationDiv.className = 'p-4 text-center text-gray-600 dark:text-gray-400';
+      noLocationDiv.innerHTML = '<p class="mb-2">📍 No location data available</p><p class="text-sm">Update your city in the profile to set your location.</p>';
+      document.getElementById('map').appendChild(noLocationDiv);
+      
+      console.warn('Agent location not available. Latitude:', latitude, 'Longitude:', longitude);
   }
 </script>
 </body>

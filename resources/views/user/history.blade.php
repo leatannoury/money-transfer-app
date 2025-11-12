@@ -113,13 +113,13 @@
           @forelse($transactions as $txn)
             @php
               $isOutgoing = $txn->sender_id == Auth::id();
-              $isCompleted = $txn->status == 'completed';
-              $canAddBeneficiary = $isOutgoing && $isCompleted && $txn->receiver;
-              $receiverName = $txn->receiver->name ?? '';
-              $receiverPhone = $txn->receiver->phone ?? '';
+              $otherParty = $isOutgoing ? $txn->receiver : $txn->sender;
+              $canAddBeneficiary = $otherParty !== null;
+              $otherPartyName = $otherParty->name ?? '';
+              $otherPartyPhone = $otherParty->phone ?? '';
               $alreadyBeneficiary = $canAddBeneficiary && (
-                in_array($receiverName, $beneficiaryNames) || 
-                ($receiverPhone && in_array($receiverPhone, $beneficiaryPhones))
+                in_array($otherPartyName, $beneficiaryNames) || 
+                ($otherPartyPhone && in_array($otherPartyPhone, $beneficiaryPhones))
               );
             @endphp
             <div class="flex items-center p-4 border-b border-gray-200 dark:border-gray-800">
