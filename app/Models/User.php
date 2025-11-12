@@ -120,4 +120,10 @@ public function beneficiaries()
         // Compare times as strings (works because format is consistent)
         return $currentTime >= $startTime && $currentTime <= $endTime;
     }
+
+    public function paymentMethods()
+{
+    return $this->hasMany(\App\Models\PaymentMethod::class);
+}
+
 }

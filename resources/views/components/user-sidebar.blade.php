@@ -21,7 +21,7 @@
         <span class="material-symbols-outlined">people</span>
         <span>Beneficiaries</span>
     </a>
-        <a href="{{ route('user.agents-map') }}" class="flex items-center gap-3 p-3 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-800">
+     <a href="{{ route('user.agents-map') }}" class="flex items-center gap-3 p-3 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-800">
           <span class="material-symbols-outlined">map</span>
           <span>Agents Map</span>
         </a>
@@ -29,7 +29,7 @@
           <span class="material-symbols-outlined">rate_review</span>
           <span>Reviews & Rates</span>
         </a>
-                <a href="#" class="flex items-center gap-3 p-3 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-800">
+                <a href="{{ route('user.settings') }}" class="flex items-center gap-3 p-3 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-800">
 <span class="material-symbols-outlined">settings</span>
 <p >Settings</p>
 </a>
