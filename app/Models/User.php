@@ -92,4 +92,10 @@ public function beneficiaries()
         $currentTime = now()->format('H:i:s');
         return $currentTime >= $this->work_start_time && $currentTime <= $this->work_end_time;
     }
+
+    public function paymentMethods()
+{
+    return $this->hasMany(\App\Models\PaymentMethod::class);
+}
+
 }
