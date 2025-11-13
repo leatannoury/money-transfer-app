@@ -18,7 +18,19 @@ class AgentController extends Controller
         /** @var \App\Models\User $agent */
         $agent = Auth::user();
 
-        return view('agent.dashboard', compact('agent'));
+        // ✅ Fetch latest notifications for this agent
+        $notifications = $agent->agentNotifications()
+        ->where('is_read', false)
+        ->latest()
+        ->take(5)
+        ->get();
+
+        // ✅ Count unread notifications
+        $unreadCount = $agent->agentNotifications()
+            ->where('is_read', false)
+            ->count();
+
+        return view('agent.dashboard', compact('agent', 'notifications', 'unreadCount'));
     }
 
     /**
@@ -28,83 +40,101 @@ class AgentController extends Controller
     public function updateProfile(Request $request)
     {
         $request->validate([
-            'phone' => 'nullable|string|max:20',
-            'city' => 'nullable|string|max:255',
-            'commission' => 'nullable|numeric|min:0|max:100',
+            'phone'           => 'nullable|string|max:20',
+            'city'            => 'nullable|string|max:255',
+            'commission'      => 'nullable|numeric|min:0|max:100',
             'work_start_time' => 'nullable|date_format:H:i',
-            'work_end_time' => 'nullable|date_format:H:i',
-            'is_available' => 'nullable|boolean',
+            'work_end_time'   => 'nullable|date_format:H:i',
+            'is_available'    => 'nullable|boolean',
         ], [
-            'commission.max' => 'Commission cannot exceed 100%.',
+            'commission.max'           => 'Commission cannot exceed 100%.',
             'work_start_time.date_format' => 'Work start time must be in HH:MM format.',
-            'work_end_time.date_format' => 'Work end time must be in HH:MM format.',
+            'work_end_time.date_format'   => 'Work end time must be in HH:MM format.',
         ]);
 
         /** @var \App\Models\User $agent */
         $agent = Auth::user();
 
-        // Update profile fields only if they are provided
+        // ---- Basic profile fields ----
         if ($request->filled('phone')) {
-        $agent->phone = $request->phone;
+            $agent->phone = $request->phone;
         }
-        
+
         if ($request->filled('city')) {
-        $agent->city = $request->city;
+            $agent->city = $request->city;
         } elseif ($request->has('city') && $request->city === '') {
-            // Allow clearing the city field
+            // allow clearing city
             $agent->city = null;
         }
-        
+
         if ($request->filled('commission')) {
-        $agent->commission = $request->commission;
+            $agent->commission = $request->commission;
         }
-        
+
         if ($request->filled('work_start_time')) {
-        $agent->work_start_time = $request->work_start_time;
+            $agent->work_start_time = $request->work_start_time;
         }
-        
+
         if ($request->filled('work_end_time')) {
-        $agent->work_end_time = $request->work_end_time;
+            $agent->work_end_time = $request->work_end_time;
         }
-        
+
         // Ensure status is set
         if (!$agent->status) {
             $agent->status = 'active';
         }
-        
-        // Handle availability toggle if provided
+
+        // Availability toggle
         if ($request->has('is_available')) {
             $agent->is_available = $request->boolean('is_available');
         }
 
-        // --- Auto Fetch Latitude & Longitude based on City ---
+        // ---- Auto Fetch Latitude & Longitude (ANY Lebanon city/village) ----
         if ($request->filled('city')) {
+            $cityQuery = trim($request->city);
+
             try {
                 $response = Http::withHeaders([
-                    'User-Agent' => 'LaravelApp/1.0 (contact@example.com)',
-                ])->timeout(5)->get('https://nominatim.openstreetmap.org/search', [
-                    'q' => $request->city . ', Lebanon',
-                    'format' => 'json',
-                    'limit' => 1,
-                ]);
+                        // Nominatim requires a real user-agent
+                        'User-Agent' => 'Transferly/1.0 (contact@yourapp.com)',
+                        'Accept-Language' => 'en',
+                    ])
+                    ->timeout(10)
+                    ->get('https://nominatim.openstreetmap.org/search', [
+                        'q'              => $cityQuery . ', Lebanon',
+                        'format'         => 'json',
+                        'limit'          => 1,
+                        'addressdetails' => 0,
+                    ]);
 
-                $data = $response->json();
+                if ($response->successful()) {
+                    $data = $response->json();
 
-                if (!empty($data) && !empty($data[0])) {
-                    $agent->latitude = $data[0]['lat'];
-                    $agent->longitude = $data[0]['lon'];
+                    if (!empty($data) && isset($data[0]['lat'], $data[0]['lon'])) {
+                        $agent->latitude  = $data[0]['lat'];
+                        $agent->longitude = $data[0]['lon'];
+                    } else {
+                        Log::warning("Geocoding: no results for '{$cityQuery}'", [
+                            'response' => $data,
+                        ]);
+                        // keep existing coordinates if any
+                    }
                 } else {
-                    Log::warning('City not found in geocoding: ' . $request->city);
-                    // Don't clear existing coordinates if geocoding fails
+                    Log::error('Geocoding HTTP error', [
+                        'status' => $response->status(),
+                        'body'   => $response->body(),
+                    ]);
                 }
-            } catch (\Exception $e) {
+            } catch (\Throwable $e) {
                 Log::error('Geocoding failed: ' . $e->getMessage());
-                // Don't clear existing coordinates if geocoding fails
+                // keep existing coordinates on failure
             }
+
         } elseif ($request->has('city') && $request->city === '') {
-            // If city is cleared, optionally clear coordinates too
-            // $agent->latitude = null;
-            // $agent->longitude = null;
+            // City cleared: also clear coordinates if you want
+            // comment these lines if you prefer to keep old coords
+            $agent->latitude  = null;
+            $agent->longitude = null;
         }
 
         $agent->save();
@@ -118,14 +148,14 @@ class AgentController extends Controller
     public function saveLocation(Request $request)
     {
         $request->validate([
-            'latitude' => 'nullable|numeric',
+            'latitude'  => 'nullable|numeric',
             'longitude' => 'nullable|numeric',
         ]);
 
         /** @var \App\Models\User $agent */
         $agent = Auth::user();
 
-        $agent->latitude = $request->latitude;
+        $agent->latitude  = $request->latitude;
         $agent->longitude = $request->longitude;
         $agent->save();
 
