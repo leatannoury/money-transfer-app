@@ -9,6 +9,8 @@ use Illuminate\Support\Facades\Auth;
 use App\Models\User;
 use App\Models\Transaction;
 use App\Models\Beneficiary;
+use App\Services\CurrencyService;
+use Illuminate\Validation\Rule;
 
 class TransferController extends Controller
 {
@@ -17,6 +19,8 @@ class TransferController extends Controller
         // Show form to send money
         $users = User::where('id', '!=', Auth::id())->get();
         $beneficiaries = Beneficiary::where('user_id', Auth::id())->get();
+        $currencies = CurrencyService::getSupportedCurrencies();
+        $selectedCurrency = session('user_currency', 'USD');
         
         // Get available agents (users with 'Agent' role who are currently available)
         $availableAgents = User::role('Agent')
@@ -28,10 +32,12 @@ class TransferController extends Controller
             })
             ->values();
         
-        return view('user.transfer', compact('users', 'beneficiaries', 'availableAgents'));
+        return view('user.transfer', compact('users', 'beneficiaries', 'availableAgents', 'currencies', 'selectedCurrency'));
     }
 public function send(Request $request)
 {
+    $currencies = CurrencyService::getSupportedCurrencies();
+
     // Basic validation
     $request->validate([
         'search_type' => 'required|in:email,phone',
@@ -40,6 +46,7 @@ public function send(Request $request)
         'phone' => 'nullable|string',
         'service_type' => 'required|in:wallet_to_wallet,transfer_via_agent',
         'agent_id' => 'nullable|exists:users,id',
+        'currency' => ['required', Rule::in(array_keys($currencies))],
     ]);
     
     // Require agent_id when service_type is transfer_via_agent
@@ -65,6 +72,8 @@ public function send(Request $request)
     $sender = Auth::user();
     $amount = $request->amount;
     $serviceType = $request->service_type;
+    $transactionCurrency = $request->currency;
+    $amountInUsd = round(CurrencyService::convert($amount, 'USD', $transactionCurrency), 2);
 
     // Handle receiver
     if ($request->search_type === 'email') {
@@ -84,7 +93,7 @@ public function send(Request $request)
     }
     
     // Check balance for all transaction types
-    if ($sender->balance < $amount) {
+    if ($sender->balance < $amountInUsd) {
         $balanceFormatted = number_format($sender->balance, 2);
         return back()->withInput()->withErrors(['amount' => "You don't have enough balance to complete this transfer. Your current balance is \${$balanceFormatted}."]);
     }
@@ -93,8 +102,8 @@ public function send(Request $request)
     if ($serviceType === 'wallet_to_wallet') {
 
         // Direct wallet-to-wallet
-        $sender->balance -= $amount;
-        $receiver->balance += $amount;
+        $sender->balance -= $amountInUsd;
+        $receiver->balance += $amountInUsd;
         $sender->save();
         $receiver->save();
 
@@ -102,6 +111,7 @@ public function send(Request $request)
             'sender_id' => $sender->id,
             'receiver_id' => $receiver->id,
             'amount' => $amount,
+            'currency' => $transactionCurrency,
             'status' => 'completed', // ✅ completed for wallet transfers
             'agent_id' => null, // Wallet to wallet doesn't need an agent
             'service_type' => $serviceType,
@@ -117,6 +127,7 @@ public function send(Request $request)
             'sender_id' => $sender->id,
             'receiver_id' => $receiver->id,
             'amount' => $amount,
+            'currency' => $transactionCurrency,
             'status' => $status,
             'agent_id' => $request->agent_id ?? null,
             'service_type' => $serviceType,

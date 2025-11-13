@@ -21,7 +21,8 @@ class ReviewController extends Controller
         
         // Get all reviews for display (latest first)
         $reviews = Review::with('user')
-            ->orderBy('created_at', 'desc')
+            ->approved()
+            ->orderBy('approved_at', 'desc')
             ->get();
         
         // Get average rating and total reviews
@@ -52,22 +53,28 @@ class ReviewController extends Controller
         $existingReview = Review::where('user_id', $user->id)->first();
 
         if ($existingReview) {
-            // Update existing review
-            $existingReview->rating = $request->rating;
-            $existingReview->comment = $request->comment;
-            $existingReview->save();
-
-            return back()->with('success', 'Your review has been updated successfully!');
-        } else {
-            // Create new review
-            Review::create([
-                'user_id' => $user->id,
+            // Update existing review and reset approval
+            $existingReview->fill([
                 'rating' => $request->rating,
                 'comment' => $request->comment,
+                'is_approved' => false,
+                'approved_by' => null,
+                'approved_at' => null,
             ]);
+            $existingReview->save();
 
-            return back()->with('success', 'Thank you for your review!');
+            return back()->with('success', 'Your review update has been submitted and is pending admin approval.');
         }
+
+        // Create new review (pending approval)
+        Review::create([
+            'user_id' => $user->id,
+            'rating' => $request->rating,
+            'comment' => $request->comment,
+            'is_approved' => false,
+        ]);
+
+        return back()->with('success', 'Thank you! Your review is pending admin approval.');
     }
 
     /**

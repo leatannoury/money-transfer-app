@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\ManageUserController;
 use App\Http\Controllers\Admin\ManageAgentController;
 use App\Http\Controllers\Admin\ManageTransactionController;
+use App\Http\Controllers\Admin\ReviewManagementController;
 
 Route::middleware(['auth','check.banned','role:Admin'])->prefix('admin')->name('admin.')->group(function () {
   Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
@@ -28,4 +29,7 @@ Route::post('/agents/{id}/update', [ManageAgentController::class, 'updateAgent']
 
 
 Route::get('/manageTransactions',[ManageTransactionController::class,'manageTransaction'])->name("transactions");
+Route::get('/reviews', [ReviewManagementController::class, 'index'])->name('reviews.index');
+Route::post('/reviews/{review}/approve', [ReviewManagementController::class, 'approve'])->name('reviews.approve');
+Route::delete('/reviews/{review}', [ReviewManagementController::class, 'destroy'])->name('reviews.destroy');
 });

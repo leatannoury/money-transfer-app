@@ -24,7 +24,8 @@ public function index(Request $request)
     
     // Get all reviews for display (latest first)
     $reviews = \App\Models\Review::with('user')
-        ->orderBy('created_at', 'desc')
+        ->approved()
+        ->orderBy('approved_at', 'desc')
         ->take(10)
         ->get();
     
