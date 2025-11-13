@@ -88,6 +88,14 @@
   <option value="amount_asc" {{ request('sort') == 'amount_asc' ? 'selected' : '' }}>Amount (Low → High)</option>
 </select>
 
+  <select name="currency" onchange="this.form.submit()" class="border rounded-lg p-2 text-sm">
+    @foreach($currencies as $code => $name)
+      <option value="{{ $code }}" {{ $selectedCurrency === $code ? 'selected' : '' }}>
+        {{ $code }}
+      </option>
+    @endforeach
+  </select>
+
 
   <a href="{{ route('user.transactions') }}" class="px-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-100">
     Reset
@@ -154,9 +162,18 @@
               <!-- Amount & Status & Action -->
               <div class="flex items-center gap-4">
                 <div class="text-right">
+                  @php
+                    $txnCurrency = $txn->currency ?? 'USD';
+                    $displayAmount = \App\Services\CurrencyService::convert($txn->amount, $selectedCurrency, $txnCurrency);
+                  @endphp
                   <p class="font-semibold text-gray-900 dark:text-gray-100">
-                    {{ $isOutgoing ? '-' : '+' }}${{ number_format($txn->amount, 2) }}
+                    {{ $isOutgoing ? '-' : '+' }}{{ \App\Services\CurrencyService::format($displayAmount, $selectedCurrency) }}
                   </p>
+                  @if($selectedCurrency !== $txnCurrency)
+                    <p class="text-xs text-gray-500 dark:text-gray-400">
+                      {{ \App\Services\CurrencyService::format($txn->amount, $txnCurrency) }}
+                    </p>
+                  @endif
                   <p class="text-sm 
                     @if($txn->status == 'completed') text-green-600 dark:text-green-500
                     @elseif($txn->status == 'pending') text-yellow-500

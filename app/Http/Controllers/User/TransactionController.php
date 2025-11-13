@@ -9,6 +9,7 @@ use App\Models\Beneficiary;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Response;
 use PDF;
+use App\Services\CurrencyService;
 
 
 class TransactionController extends Controller
@@ -142,10 +143,16 @@ public function index(Request $request)
         ->whereNotNull('phone_number')
         ->pluck('phone_number')->toArray();
 
+    $selectedCurrency = $request->get('currency', session('user_currency', 'USD'));
+    session(['user_currency' => $selectedCurrency]);
+    $currencies = CurrencyService::getSupportedCurrencies();
+
     return view('user.history', compact(
         'transactions',
         'beneficiaryNames',
-        'beneficiaryPhones'
+        'beneficiaryPhones',
+        'selectedCurrency',
+        'currencies'
     ));
 }
 
