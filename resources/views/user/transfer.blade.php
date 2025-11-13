@@ -47,15 +47,7 @@
         Send Money
       </h1>
 
-      @if($errors->any())
-        <div class="mb-6 p-4 rounded-lg bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300">
-          <ul class="list-disc pl-5">
-            @foreach($errors->all() as $error)
-              <li>{{ $error }}</li>
-            @endforeach
-          </ul>
-        </div>
-      @endif
+
 
      @if($errors->any())
   <div class="mb-6 p-4 rounded-lg bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300">
@@ -278,6 +270,54 @@
               </div>
             </div>
 
+
+ <!-- Payment Method -->
+<div>
+  <label class="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
+    Payment Method
+  </label>
+  <div class="relative">
+    <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">credit_card</span>
+    <select 
+      name="payment_method" 
+      id="payment_method"
+      required
+      class="w-full pl-10 pr-4 py-2.5 border border-gray-300 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800 focus:ring-2 focus:ring-primary text-gray-900 dark:text-white">
+      <option value="wallet" {{ old('payment_method') == 'wallet' ? 'selected' : '' }}>App Wallet</option>
+      <option value="credit_card" {{ old('payment_method') == 'credit_card' ? 'selected' : '' }}>Saved Credit Card</option>
+      <option value="bank_account" {{ old('payment_method') == 'bank_account' ? 'selected' : '' }}>Saved Bank Account</option>
+    </select>
+  </div>
+</div>
+
+<!-- Saved Cards Dropdown -->
+<div id="cards-dropdown" class="mt-4 hidden">
+  <label class="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Select Card</label>
+  <select name="card_id" class="w-full pl-3 pr-4 py-2.5 border border-gray-300 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800 focus:ring-2 focus:ring-primary text-gray-900 dark:text-white">
+    <option value="">-- Select a card --</option>
+    @foreach($cards as $card)
+      <option value="{{ $card->id }}">
+        {{ $card->nickname ?? $card->provider . ' ending in ' . $card->last4 }}
+      </option>
+    @endforeach
+  </select>
+</div>
+
+<!-- Saved Bank Accounts Dropdown -->
+<div id="banks-dropdown" class="mt-4 hidden">
+  <label class="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Select Bank Account</label>
+  <select name="bank_id" class="w-full pl-3 pr-4 py-2.5 border border-gray-300 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800 focus:ring-2 focus:ring-primary text-gray-900 dark:text-white">
+    <option value="">-- Select a bank account --</option>
+    @foreach($banks as $bank)
+      <option value="{{ $bank->id }}">
+        {{ $bank->nickname ?? 'Bank ending in ' . $bank->last4 }}
+      </option>
+    @endforeach
+  </select>
+</div>
+
+
+
             <!-- Submit -->
             <button type="submit"
               class="w-full bg-primary text-white font-semibold py-3 px-4 rounded-lg flex items-center justify-center gap-2 hover:opacity-90 transition-opacity focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary dark:focus:ring-offset-background-dark">
@@ -398,6 +438,27 @@
       });
   }
 </script>
+
+<script>
+
+  const paymentMethodSelect = document.getElementById('payment_method');
+const cardsDropdown = document.getElementById('cards-dropdown');
+const banksDropdown = document.getElementById('banks-dropdown');
+
+function togglePaymentDropdowns() {
+    const selected = paymentMethodSelect.value;
+    cardsDropdown.style.display = selected === 'credit_card' ? 'block' : 'none';
+    banksDropdown.style.display = selected === 'bank_account' ? 'block' : 'none';
+}
+
+paymentMethodSelect.addEventListener('change', togglePaymentDropdowns);
+
+// Initialize on page load
+window.addEventListener('DOMContentLoaded', togglePaymentDropdowns);
+
+</script>
+
+
 </body>
 </html>
 @endsection

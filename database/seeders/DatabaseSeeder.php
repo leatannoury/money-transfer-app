@@ -23,7 +23,9 @@ class DatabaseSeeder extends Seeder
         ]);
 
             $this->call([
-        FakeCardsSeeder::class,
+                Roleseeder::class,
+                FakeBankAccountsSeeder::class,
+                FakeCardsSeeder::class,
         ]);
 
     }
