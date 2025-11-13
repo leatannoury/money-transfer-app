@@ -23,6 +23,12 @@ Route::middleware(['auth','check.banned','role:User'])->prefix('user')->name('us
     //  Transaction history
     Route::get('/transactions', [TransactionController::class, 'index'])->name('transactions');
     
+    Route::get('/payment-methods/{id}/edit', [PaymentMethodController::class, 'edit'])->name('payment-methods.edit');
+Route::put('/payment-methods/{id}', [PaymentMethodController::class, 'update'])->name('payment-methods.update');
+Route::put('/payment-methods/{method}/primary', [PaymentMethodController::class, 'setPrimary'])
+    ->name('payment-methods.primary');
+
+
     //  Agents Map
     Route::get('/agents-map', [AgentsMapController::class, 'index'])->name('agents-map');
     
