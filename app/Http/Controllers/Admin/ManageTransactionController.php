@@ -8,25 +8,9 @@ use Illuminate\Http\Request;
 
 class ManageTransactionController extends Controller
 {
-//    public function manageTransaction()
-// {
-//     $walletToWallet = Transaction::with(['sender', 'receiver'])
-//         ->whereNull('agent_id')
-//         ->latest()
-//         ->get();
 
-//     $walletToPerson = Transaction::with(['sender', 'receiver' , 'agent'])
-//         ->whereNotNull('agent_id')
-//         ->latest()
-//         ->get();
-
-//     return view('admin.ManageTransaction.manageTransaction', compact('walletToWallet', 'walletToPerson'));
-// }
 public function manageTransaction(Request $request)
 {
-    // ================================
-    // 🔹 WALLET TO WALLET TRANSACTIONS
-    // ================================
     $walletToWalletQuery = Transaction::with(['sender', 'receiver'])
         ->whereNull('agent_id');
 
@@ -75,7 +59,7 @@ public function manageTransaction(Request $request)
         $walletToWalletQuery->orderBy('created_at', 'desc');
     }
 
-    $walletToWallet = $walletToWalletQuery->get();
+        $walletToWallet = $walletToWalletQuery->paginate(10)->withQueryString();
 
     // ================================
     // 🔹 WALLET TO PERSON TRANSACTIONS
@@ -130,7 +114,8 @@ public function manageTransaction(Request $request)
         $walletToPersonQuery->orderBy('created_at', 'desc');
     }
 
-    $walletToPerson = $walletToPersonQuery->get();
+    $walletToPerson = $walletToPersonQuery->paginate(10)->withQueryString();
+     
 
     // Return to view
     return view('admin.ManageTransaction.manageTransaction', compact('walletToWallet', 'walletToPerson'));

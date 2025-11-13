@@ -112,6 +112,9 @@
                 @endforelse
               </tbody>
             </table>
+            <div class="p-4 flex justify-center">
+        {{ $walletToWallet->links('pagination::tailwind') }}
+    </div>
           </div>
         </div>
 
@@ -201,6 +204,9 @@
                 @endforelse
               </tbody>
             </table>
+             <div class="p-4 flex justify-center">
+      {{ $walletToPerson->links('pagination::tailwind') }}
+    </div>
           </div>
         </div>
 

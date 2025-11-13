@@ -10,12 +10,32 @@ use Illuminate\Http\Request;
 
 class ManageUserController extends Controller
 {
-public function manageUsers()
+public function manageUsers(Request $request)
 {
-      $totalUsers = User::role('user')->count();
-       $users = User::role('user')->select('id','name','email','phone','status')->get();
-    return view('admin.manageUser.manageUser', compact('totalUsers', 'users'));
+    $query = User::role('user')
+        ->select('id', 'name', 'email', 'phone', 'status');
 
+    // 🔍 Email filter
+    if ($request->filled('email')) {
+        $query->where('email', 'like', "%{$request->email}%");
+    }
+
+    // 📞 Phone filter
+    if ($request->filled('phone')) {
+        $query->where('phone', 'like', "%{$request->phone}%");
+    }
+
+    // ⚙️ Status filter
+    if ($request->filled('status')) {
+        $query->where('status', $request->status);
+    }
+
+    // 🧾 Paginate
+    $users = $query->paginate(10)->withQueryString();
+
+    
+
+    return view('admin.manageUser.manageUser', compact( 'users'));
 }
 
 

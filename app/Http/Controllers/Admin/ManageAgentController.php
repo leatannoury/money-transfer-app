@@ -11,9 +11,27 @@ use Illuminate\Http\Request;
 class ManageAgentController extends Controller
 {
 
-public function  manageAgents(){
+public function  manageAgents(Request $request){
     $totalUsers = User::role('Agent')->count();
-       $users = User::role('Agent')->select('id','name','email','phone','status','city','commission')->get();
+       $query = User::role('Agent')->select('id','name','email','phone','status','city','commission');
+         if ($request->filled('email')) {
+        $query->where('email', 'like', "%{$request->email}%");
+    }
+
+    
+    if ($request->filled('phone')) {
+        $query->where('phone', 'like', "%{$request->phone}%");
+    }
+
+   
+    if ($request->filled('status')) {
+        $query->where('status', $request->status);
+    }
+
+   
+    $users = $query->paginate(10)->withQueryString();
+       
+      
     return view('admin.ManageAgent.manageAgent', compact('totalUsers', 'users'));
 
  
