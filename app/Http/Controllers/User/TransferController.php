@@ -94,7 +94,7 @@ public function send(Request $request)
         }
         
         // Check balance for all transaction types
-        if ($sender->balance < $amount) {
+        if ($sender->balance < $amountInUsd) {
             $balanceFormatted = number_format($sender->balance, 2);
             return back()->withInput()->withErrors(['amount' => "You don't have enough balance to complete this transfer. Your current balance is \${$balanceFormatted}."]);
         }
@@ -124,7 +124,7 @@ public function send(Request $request)
         // Otherwise, leave it as pending_agent for any agent to accept
         $status = $request->agent_id ? 'in_progress' : 'pending_agent';
         
-        Transaction::create([
+       $transaction= Transaction::create([
             'sender_id' => $sender->id,
             'receiver_id' => $receiver->id,
             'amount' => $amount,
