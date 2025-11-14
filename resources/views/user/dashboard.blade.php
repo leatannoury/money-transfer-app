@@ -166,6 +166,20 @@
       </div>
     @endif
 
+@if($userReview)
+  @if(!$userReview->is_approved)
+    <div class="mb-4 p-3 rounded-lg bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-300 text-sm flex items-center gap-2">
+      <span class="material-symbols-outlined text-base">hourglass_empty</span>
+      <span>Your latest review is pending admin approval.</span>
+    </div>
+  @else
+    <div class="mb-4 p-3 rounded-lg bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 text-sm flex items-center gap-2">
+      <span class="material-symbols-outlined text-base">verified</span>
+      <span>Approved on {{ $userReview->approved_at?->format('M d, Y H:i') ?? $userReview->updated_at->format('M d, Y H:i') }}.</span>
+    </div>
+  @endif
+@endif
+
     @if($errors->any())
       <div class="mb-4 p-3 rounded-lg bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 text-sm">
         <ul class="list-disc pl-5">
@@ -244,7 +258,7 @@
               </div>
               <div>
                 <p class="font-bold text-black dark:text-white">{{ $review->user->name }}</p>
-                <p class="text-xs text-black/60 dark:text-white/60">{{ $review->created_at->format('M d, Y') }}</p>
+              <p class="text-xs text-black/60 dark:text-white/60">{{ $review->approved_at?->format('M d, Y') ?? $review->created_at->format('M d, Y') }}</p>
               </div>
             </div>
             <div class="flex items-center">

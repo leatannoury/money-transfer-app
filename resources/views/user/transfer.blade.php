@@ -248,19 +248,49 @@
               </div>
             </div>
 
+            <!-- Currency -->
+            <div>
+              <label class="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Currency</label>
+              <div class="relative">
+                <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">payments</span>
+                <select
+                  name="currency"
+                  id="currency"
+                  required
+                  class="w-full pl-10 pr-4 py-2.5 border border-gray-300 dark:border-gray-700 
+                         rounded-lg bg-gray-50 dark:bg-gray-800 
+                         focus:ring-2 focus:ring-primary 
+                         text-gray-900 dark:text-white">
+                  @foreach($currencies as $code => $name)
+                    <option value="{{ $code }}" {{ old('currency', $selectedCurrency) === $code ? 'selected' : '' }}>
+                      {{ $code }} - {{ $name }}
+                    </option>
+                  @endforeach
+                </select>
+              </div>
+              @error('currency')
+                <p class="text-sm text-red-500 mt-1">{{ $message }}</p>
+              @enderror
+              <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                Choose the currency you want to send in. Amount will be converted from your USD balance automatically.
+              </p>
+            </div>
+
             <!-- Amount -->
             <div>
-              <label class="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Amount</label>
+              <label class="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
+                Amount (<span id="amount-currency-label">{{ old('currency', $selectedCurrency) }}</span>)
+              </label>
               <div class="relative">
-                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">$</span>
                 <input 
                   type="number" 
                   step="0.01" 
+                  min="0"
                   name="amount" 
                   placeholder="0.00" 
                   required
                   value="{{ old('amount') }}"
-                  class="w-full pl-7 pr-4 py-2.5 border border-gray-300 dark:border-gray-700 
+                  class="w-full pr-4 py-2.5 border border-gray-300 dark:border-gray-700 
                          rounded-lg bg-gray-50 dark:bg-gray-800 
                          focus:ring-2 focus:ring-primary 
                          text-gray-900 dark:text-white font-semibold">
@@ -436,6 +466,17 @@
               alert('This beneficiary does not have contact information. Please enter manually.');
           }
       });
+  }
+
+  // Currency label sync
+  const currencySelect = document.getElementById('currency');
+  const amountCurrencyLabel = document.getElementById('amount-currency-label');
+  if (currencySelect && amountCurrencyLabel) {
+      const updateAmountLabel = () => {
+          amountCurrencyLabel.textContent = currencySelect.value;
+      };
+      currencySelect.addEventListener('change', updateAmountLabel);
+      currencySelect.addEventListener('input', updateAmountLabel);
   }
 </script>
 
