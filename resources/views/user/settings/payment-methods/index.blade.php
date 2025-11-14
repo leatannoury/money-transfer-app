@@ -6,14 +6,12 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Add Payment Method - Transferly</title>
+  <title>Payment Methods - Transferly</title>
 
-  {{-- Fonts & Icons --}}
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
-
-  {{-- Tailwind --}}
   <script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
+
   <script>
     tailwind.config = {
       darkMode: "class",
@@ -25,11 +23,11 @@
             "background-dark": "#191919",
           },
           fontFamily: { display: "Manrope" },
-          borderRadius: { DEFAULT: "0.25rem", lg: "0.5rem", xl: "0.75rem", full: "9999px" },
         }
       }
     }
   </script>
+
   <style>
     .material-icons-outlined { font-size: 24px; line-height: 1; }
     input[type=text]:focus, input[type=password]:focus { --tw-ring-color: #000000; }
@@ -41,7 +39,7 @@
 <div class="flex min-h-screen">
 
     {{-- Sidebar --}}
- @include('components.user-sidebar')
+    @include('components.user-sidebar')
 
     <main class="flex-1 p-8 overflow-y-auto">
 
@@ -53,11 +51,10 @@
                     <span class="material-icons-outlined">notifications</span>
                     <span class="absolute top-0 right-0 w-2 h-2 bg-primary rounded-full"></span>
                 </button>
-
-                         </div>
+            </div>
         </header>
 
-        <div class="max-w-4xl mx-auto">
+        <div class="max-w-4xl mx-auto space-y-6">
 
             {{-- Success message --}}
             @if(session('success'))
@@ -66,61 +63,219 @@
                 </div>
             @endif
 
-            {{-- Add New Payment Method Button --}}
-            <div class="flex justify-end mb-6">
-                <a href="{{ route('user.payment-methods.create') }}"
-                   class="bg-primary text-white font-semibold py-2 px-4 rounded-lg flex items-center gap-2 
-                           transition-colors focus:outline-none 
-                          focus:ring-2 focus:ring-offset-2 focus:ring-primary dark:focus:ring-offset-background-dark dark:focus:ring-white">
-                    <span class="material-icons-outlined text-base">add</span>
-                    <span>Add New Payment Method</span>
-                </a>
+            {{-- CREDIT CARDS SECTION --}}
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+                <div class="p-6 cursor-pointer flex justify-between items-center section-header" data-target="cards-content">
+                    <h2 class="text-xl font-semibold text-gray-900 dark:text-white">Credit Cards</h2>
+                    <span class="material-icons-outlined text-gray-500 dark:text-gray-400 transition-transform">expand_more</span>
+                </div>
+                <div id="cards-content" class="hidden px-6 pb-6 space-y-4">
+                    <a href="{{ route('user.payment-methods.create', ['type' => 'card']) }}"
+                       class="w-full bg-gray-100 dark:bg-gray-700/50 text-gray-700 dark:text-gray-300 font-semibold py-3 px-4 rounded-lg flex items-center justify-center gap-2 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary dark:focus:ring-offset-background-dark">
+                        <span class="material-icons-outlined text-base">add</span>
+                        <span>Add New Credit Card</span>
+                    </a>
+
+{{-- Credit Cards List --}}
+@forelse($methods->where('type', 'credit_card') as $method)
+    <div class="flex items-center justify-between p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+        <div class="flex items-center gap-4">
+            <div class="w-12 h-8 bg-gray-100 dark:bg-gray-700 rounded-md flex items-center justify-center">
+                <span class="material-icons-outlined text-gray-500 dark:text-gray-400">credit_card</span>
+            </div>
+            <div>
+                <p class="font-semibold text-gray-900 dark:text-white">
+                    {{ $method->nickname ?? $method->provider . ' ending in ' . $method->last4 }}
+                </p>
+                <p class="text-sm text-gray-500 dark:text-gray-400">
+                    {{ $method->provider }} <br> Expires {{ $method->expiry }}
+                </p>
+            </div>
+        </div>
+
+<div class="flex items-center gap-3">
+
+    {{-- Primary Status --}}
+<form action="{{ route('user.payment-methods.primary', $method->id) }}" method="POST" class="inline">
+    @csrf
+    @method('PUT')
+    <button type="submit"
+        class="flex items-center gap-1 transition-colors
+               {{ $method->is_primary ? 'text-yellow-500 hover:text-gray-500' : 'text-gray-500 hover:text-yellow-500' }}">
+        <span class="material-icons-outlined text-base">
+            {{ $method->is_primary ? 'star' : 'star_outline' }}
+        </span>
+      
+    </button>
+</form>
+
+
+    {{-- Edit --}}
+    <a href="{{ route('user.payment-methods.edit', $method->id) }}" 
+       class="text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 flex items-center gap-1">
+       <span class="material-icons-outlined text-base">edit</span> Edit
+    </a>
+
+    {{-- Delete --}}
+    <button type="button"
+            class="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-600 flex items-center gap-1"
+            onclick="openDeleteModal({{ $method->id }})">
+        <span class="material-icons-outlined text-base">delete</span> Delete
+    </button>
+
+</div>
+
+
+
+    </div>
+@empty
+    <p class="text-gray-600 dark:text-gray-400">No saved credit cards.</p>
+@endforelse
+
+
+                </div>
             </div>
 
-            {{-- Payment Methods List --}}
-            <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 space-y-4">
+{{-- BANK ACCOUNTS SECTION --}}
+<div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+    <div class="p-6 cursor-pointer flex justify-between items-center section-header" data-target="banks-content">
+        <h2 class="text-xl font-semibold text-gray-900 dark:text-white">Bank Accounts</h2>
+        <span class="material-icons-outlined text-gray-500 dark:text-gray-400 transition-transform">expand_more</span>
+    </div>
+    <div id="banks-content" class="hidden px-6 pb-6 space-y-4">
+        <a href="{{ route('user.payment-methods.create', ['type' => 'bank']) }}"
+           class="w-full bg-gray-100 dark:bg-gray-700/50 text-gray-700 dark:text-gray-300 font-semibold py-3 px-4 rounded-lg flex items-center justify-center gap-2 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary dark:focus:ring-offset-background-dark">
+            <span class="material-icons-outlined text-base">add</span>
+            <span>Add New Bank Account</span>
+        </a>
 
-                @if($methods->isEmpty())
-                    <p class="text-gray-600 dark:text-gray-400">No saved payment methods.</p>
-                @else
-                    @foreach($methods as $method)
-                        <div class="flex items-center justify-between p-4 rounded-lg border border-gray-200 dark:border-gray-700">
-                            <div class="flex items-center gap-4">
-                                <div class="w-12 h-8 bg-gray-100 dark:bg-gray-700 rounded-md flex items-center justify-center">
-                                    <span class="material-icons-outlined text-gray-500 dark:text-gray-400">
-                                        {{ $method->type === 'credit_card' ? 'credit_card' : 'account_balance' }}
-                                    </span>
-                                </div>
-                                <div>
-                                    <p class="font-semibold text-gray-900 dark:text-white">
-                                        {{ $method->nickname ?? $method->provider . ' ending in ' . $method->last4 }}
-                                    </p>
-                                    @if($method->type === 'credit_card')
-                                        <p class="text-sm text-gray-500 dark:text-gray-400">Expires {{ $method->expiry }}</p>
-                                    @endif
-                                </div>
-                            </div>
-
-                            <div class="flex items-center gap-4">
-
-                                {{-- Optional: Primary badge if you track primary card --}}
-                                {{-- <span class="text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300 px-2.5 py-0.5 rounded-full">Primary</span> --}}
-
-                                {{-- Delete Button --}}
-                                <form action="{{ route('user.payment-methods.destroy', $method->id) }}" method="POST" onsubmit="return confirm('Delete this payment method?');">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-600 flex items-center gap-1">
-                                        <span class="material-icons-outlined text-base">delete</span> Delete
-                                    </button>
-                                </form>
-                            </div>
-                        </div>
-                    @endforeach
-                @endif
-
+ {{-- Bank Accounts List --}}
+@forelse($methods->where('type', 'bank_account') as $method)
+    <div class="flex items-center justify-between p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+        <div class="flex items-center gap-4">
+            <div class="w-12 h-8 bg-gray-100 dark:bg-gray-700 rounded-md flex items-center justify-center">
+                <span class="material-icons-outlined text-gray-500 dark:text-gray-400">account_balance</span>
             </div>
+            <div>
+                <p class="font-semibold text-gray-900 dark:text-white">
+                    {{ $method->nickname ?? 'Bank Account ending in ' . $method->last4 }}
+                </p>
+                <p class="text-sm text-gray-500 dark:text-gray-400">
+                    Account Holder: {{ $method->cardholder_name }} <br> Bank: {{ $method->provider }}
+                </p>
+            </div>
+        </div>
+        
+<div class="flex items-center gap-3">
+
+    {{-- Primary Status --}}
+<form action="{{ route('user.payment-methods.primary', $method->id) }}" method="POST" class="inline">
+    @csrf
+    @method('PUT')
+    <button type="submit"
+        class="flex items-center gap-1 transition-colors
+               {{ $method->is_primary ? 'text-yellow-500 hover:text-gray-500' : 'text-gray-500 hover:text-yellow-500' }}">
+        <span class="material-icons-outlined text-base">
+            {{ $method->is_primary ? 'star' : 'star_outline' }}
+        </span>
+       
+    </button>
+</form>
+
+
+    {{-- Edit --}}
+    <a href="{{ route('user.payment-methods.edit', $method->id) }}" 
+       class="text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 flex items-center gap-1">
+       <span class="material-icons-outlined text-base">edit</span> Edit
+    </a>
+
+    {{-- Delete --}}
+    <button type="button"
+            class="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-600 flex items-center gap-1"
+            onclick="openDeleteModal({{ $method->id }})">
+        <span class="material-icons-outlined text-base">delete</span> Delete
+    </button>
+
+</div>
+
+
+    </div>
+@empty
+    <p class="text-gray-600 dark:text-gray-400">No linked bank accounts yet.</p>
+@endforelse
+
+    </div>
+</div>
+
+
+
+
         </div>
     </main>
 </div>
+
+
+{{-- Delete Confirmation Modal --}}
+<div id="deleteModal" class="fixed inset-0 bg-black/50 flex items-center justify-center hidden z-50">
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 w-full max-w-sm">
+    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Delete Card</h3>
+    <p class="text-gray-600 dark:text-gray-400 mb-6">Are you sure you want to delete this credit card?</p>
+    <div class="flex justify-end gap-3">
+      <button onclick="closeDeleteModal()" class="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+        Cancel
+      </button>
+      <form id="deleteForm" method="POST" class="inline">
+        @csrf
+        @method('DELETE')
+        <button type="submit" class="px-4 py-2 rounded-lg bg-red-600 text-white font-semibold hover:bg-red-700 transition">
+          Delete
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+
+
+<script>
+  let deleteModal = document.getElementById('deleteModal');
+  let deleteForm = document.getElementById('deleteForm');
+
+  function openDeleteModal(id) {
+    deleteForm.action = `/user/payment-methods/${id}`;
+    deleteModal.classList.remove('hidden');
+  }
+
+  function closeDeleteModal() {
+    deleteModal.classList.add('hidden');
+  }
+</script>
+
+
+<script>
+  // Collapsible section toggle with persistence
+  document.querySelectorAll('.section-header').forEach(header => {
+    const targetId = header.dataset.target;
+    const content = document.getElementById(targetId);
+    const icon = header.querySelector('.material-icons-outlined');
+
+    // Restore previous state from localStorage
+    const isOpen = localStorage.getItem(targetId) === 'open';
+    if (isOpen) {
+      content.classList.remove('hidden');
+      icon.classList.add('rotate-180');
+    }
+
+    header.addEventListener('click', () => {
+      const isHidden = content.classList.toggle('hidden');
+      icon.classList.toggle('rotate-180');
+      localStorage.setItem(targetId, isHidden ? 'closed' : 'open');
+    });
+  });
+</script>
+
+
+
+
+</body>
+</html>
 @endsection

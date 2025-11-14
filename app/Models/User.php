@@ -75,6 +75,15 @@ public function beneficiaries()
     return $this->hasMany(Beneficiary::class);
 }
 
+public function creditCards() {
+    return $this->hasMany(CreditCard::class);
+}
+
+public function bankAccounts() {
+    return $this->hasMany(BankAccount::class);
+}
+
+
     // Review written by the user
     public function review()
     {
