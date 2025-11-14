@@ -135,4 +135,9 @@ public function bankAccounts() {
     return $this->hasMany(\App\Models\PaymentMethod::class);
 }
 
+public function agentNotifications()
+{
+    return $this->hasMany(\App\Models\AgentNotification::class, 'agent_id');
+}
+
 }

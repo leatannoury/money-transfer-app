@@ -17,7 +17,12 @@ return new class extends Migration
     $table->foreignId('receiver_id')->constrained('users')->onDelete('cascade');
     $table->decimal('amount', 10, 2);
     $table->string('currency')->default('USD');
-    $table->enum('service_type', ['wallet_to_wallet', 'transfer_via_agent']);
+    $table->enum('service_type', [
+    'wallet_to_wallet',
+    'transfer_via_agent',
+    'cash_in',
+    'cash_out',
+]);
     $table->foreignId('agent_id')->nullable()->constrained('users')->nullOnDelete(); // only once
     $table->enum('status', ['completed', 'failed', 'pending_agent', 'in_progress'])->default('completed');
     $table->timestamps();

@@ -8,6 +8,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Agent Dashboard - Transferly</title>
 
+  {{-- CSRF for AJAX --}}
+  <meta name="csrf-token" content="{{ csrf_token() }}">
+
   {{-- Tailwind & Fonts --}}
   <script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet"/>
@@ -37,20 +40,80 @@
   <!-- Sidebar -->
   @include('components.agent-sidebar')
 
-
   <!-- Main Content -->
   <main class="flex-1 overflow-y-auto">
-    <header class="flex h-20 items-center justify-between border-b border-[#CCCCCC] px-8 dark:border-white/20">
-      <h1 class="text-2xl font-bold text-black dark:text-white">Agent Dashboard</h1>
-      <div class="relative">
-        <span class="material-symbols-outlined text-black dark:text-white text-2xl cursor-pointer">notifications</span>
-        <div class="absolute -top-1 -right-1 size-2 rounded-full bg-black dark:bg-white"></div>
+  <header class="flex h-20 items-center justify-between border-b border-[#CCCCCC] px-8 dark:border-white/20">
+  <h1 class="text-2xl font-bold text-black dark:text-white">Agent Dashboard</h1>
+
+  <div class="flex items-center gap-4">
+    {{-- Cash In / Out button --}}
+    <a href="{{ route('agent.cash.form') }}"
+       class="inline-flex items-center px-5 py-2.5 rounded-full bg-black text-white text-sm font-semibold
+              hover:bg-gray-900 dark:bg-white dark:text-black dark:hover:bg-gray-100 transition">
+      Cash In / Out
+    </a>
+
+    {{-- Notifications --}}
+    <div class="relative">
+      <button type="button" id="notifButton"
+              class="relative flex items-center justify-center w-10 h-10 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800">
+        <span class="material-symbols-outlined text-black dark:text-white text-2xl">
+          notifications
+        </span>
+
+        {{-- Unread dot --}}
+        @if(isset($unreadCount) && $unreadCount > 0)
+          <span id="notifDot" class="absolute top-2 right-2 inline-flex h-2 w-2 rounded-full bg-red-500"></span>
+        @endif
+      </button>
+
+      {{-- Dropdown --}}
+      <div id="notifDropdown"
+           class="hidden absolute right-0 mt-2 w-80 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg z-50"
+           data-read="0">
+        <div class="px-4 py-2 border-b border-gray-200 dark:border-gray-800 flex justify-between items-center">
+          <span class="text-sm font-semibold text-gray-800 dark:text-gray-100">Notifications</span>
+          <span id="notifUnreadText" class="text-xs text-gray-500 dark:text-gray-400">
+            {{ isset($unreadCount) ? $unreadCount : 0 }} unread
+          </span>
+        </div>
+
+        @if(isset($notifications) && $notifications->count())
+          <ul class="max-h-80 overflow-y-auto">
+            @foreach($notifications as $n)
+              <li class="border-b border-gray-100 dark:border-gray-800 last:border-0">
+                <a href="{{ route('agent.transactions') }}"
+                   class="block px-4 py-3 text-sm hover:bg-gray-50 dark:hover:bg-gray-800">
+                  <div class="font-semibold text-gray-800 dark:text-gray-100">
+                    {{ $n->title }}
+                  </div>
+                  @if($n->message)
+                    <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      {{ $n->message }}
+                    </div>
+                  @endif
+                  <div class="text-[11px] text-gray-400 dark:text-gray-500 mt-1">
+                    {{ $n->created_at?->diffForHumans() }}
+                  </div>
+                </a>
+              </li>
+            @endforeach
+          </ul>
+        @else
+          <div class="p-4 text-sm text-gray-500 dark:text-gray-400">
+            No notifications.
+          </div>
+        @endif
       </div>
-    </header>
+    </div>
+  </div>
+</header>
+
 
     <div class="p-8">
       <div class="mx-auto max-w-5xl">
 
+        {{-- Flash Messages --}}
         @if(session('success'))
           <div class="bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200 p-4 rounded-lg mb-6">
             {{ session('success') }}
@@ -62,7 +125,20 @@
         @endif
 
         @if($agent)
-          <!-- Profile Info -->
+          {{-- Agent Balance --}}
+          <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-white/10 rounded-xl p-8 mb-8 shadow-sm">
+            <div class="flex items-center justify-between">
+              <h2 class="text-2xl font-bold text-black dark:text-white">Total Balance</h2>
+              <span class="text-4xl font-extrabold text-black dark:text-white">
+                ${{ number_format($agent->balance ?? 0, 2) }}
+              </span>
+            </div>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+              This is your current total balance (including earned commissions).
+            </p>
+          </div>
+
+          {{-- Profile Info --}}
           <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-white/10 rounded-xl p-8 mb-8 shadow-sm">
             <h2 class="text-2xl font-bold mb-4">My Profile</h2>
             <div class="grid md:grid-cols-2 gap-4">
@@ -95,10 +171,10 @@
             </div>
           </div>
 
-          <!-- Edit Profile -->
+          {{-- Edit Profile --}}
           <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-white/10 rounded-xl p-8 mb-8 shadow-sm">
             <h2 class="text-2xl font-bold mb-4">Edit Profile</h2>
-            
+
             @if($errors->any())
               <div class="mb-6 p-4 rounded-lg bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300">
                 <ul class="list-disc pl-5">
@@ -108,12 +184,12 @@
                 </ul>
               </div>
             @endif
-            
+
             <form action="{{ route('agent.updateProfile') }}" method="POST" class="space-y-4">
               @csrf
               <div>
                 <label class="block text-gray-700 dark:text-gray-300 mb-2">Phone</label>
-                <input type="text" name="phone" value="{{ old('phone', $agent->phone) }}" 
+                <input type="text" name="phone" value="{{ old('phone', $agent->phone) }}"
                        class="w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white px-4 py-2 @error('phone') border-red-500 @enderror">
                 @error('phone')
                   <p class="text-sm text-red-500 mt-1">{{ $message }}</p>
@@ -122,7 +198,7 @@
 
               <div>
                 <label class="block text-gray-700 dark:text-gray-300 mb-2">City</label>
-                <input type="text" name="city" value="{{ old('city', $agent->city) }}" 
+                <input type="text" name="city" value="{{ old('city', $agent->city) }}"
                        placeholder="Enter city name"
                        class="w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white px-4 py-2 @error('city') border-red-500 @enderror">
                 @error('city')
@@ -133,7 +209,7 @@
 
               <div>
                 <label class="block text-gray-700 dark:text-gray-300 mb-2">Commission (%)</label>
-                <input type="number" step="0.01" min="0" max="100" name="commission" value="{{ old('commission', $agent->commission) }}" 
+                <input type="number" step="0.01" min="0" max="100" name="commission" value="{{ old('commission', $agent->commission) }}"
                        class="w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white px-4 py-2 @error('commission') border-red-500 @enderror">
                 @error('commission')
                   <p class="text-sm text-red-500 mt-1">{{ $message }}</p>
@@ -142,7 +218,7 @@
 
               <div class="mb-4">
                 <label class="flex items-center gap-3 cursor-pointer">
-                  <input type="checkbox" name="is_available" value="1" {{ old('is_available', $agent->is_available) ? 'checked' : '' }} 
+                  <input type="checkbox" name="is_available" value="1" {{ old('is_available', $agent->is_available) ? 'checked' : '' }}
                          class="w-5 h-5 text-primary border-gray-300 rounded focus:ring-primary dark:bg-gray-700 dark:border-gray-600">
                   <span class="text-gray-700 dark:text-gray-300 font-medium">Set myself as available</span>
                 </label>
@@ -152,7 +228,7 @@
               <div class="grid md:grid-cols-2 gap-4">
                 <div>
                   <label class="block text-gray-700 dark:text-gray-300 mb-2">Work Start Time</label>
-                  <input type="time" name="work_start_time" value="{{ old('work_start_time', $agent->work_start_time ? substr($agent->work_start_time, 0, 5) : '') }}" 
+                  <input type="time" name="work_start_time" value="{{ old('work_start_time', $agent->work_start_time ? substr($agent->work_start_time, 0, 5) : '') }}"
                          class="w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white px-4 py-2 @error('work_start_time') border-red-500 @enderror">
                   @error('work_start_time')
                     <p class="text-sm text-red-500 mt-1">{{ $message }}</p>
@@ -161,7 +237,7 @@
 
                 <div>
                   <label class="block text-gray-700 dark:text-gray-300 mb-2">Work End Time</label>
-                  <input type="time" name="work_end_time" value="{{ old('work_end_time', $agent->work_end_time ? substr($agent->work_end_time, 0, 5) : '') }}" 
+                  <input type="time" name="work_end_time" value="{{ old('work_end_time', $agent->work_end_time ? substr($agent->work_end_time, 0, 5) : '') }}"
                          class="w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white px-4 py-2 @error('work_end_time') border-red-500 @enderror">
                   @error('work_end_time')
                     <p class="text-sm text-red-500 mt-1">{{ $message }}</p>
@@ -169,18 +245,18 @@
                 </div>
               </div>
 
-              <button type="submit" class="bg-black dark:bg-white dark:text-black text-white font-bold py-3 px-6 rounded-full hover:opacity-80 transition-opacity">
+              <button type="submit" class="bg-black dark:bg:white dark:text:black text-white font-bold py-3 px-6 rounded-full hover:opacity-80 transition-opacity">
                 Save Changes
               </button>
             </form>
           </div>
 
-          <!-- Location -->
+          {{-- Location --}}
           <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-white/10 rounded-xl p-8 shadow-sm">
             <h2 class="text-2xl font-bold mb-4">My Location</h2>
             @if($agent->latitude && $agent->longitude)
               <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                📍 Location: {{ $agent->city ?? 'Unknown' }} 
+                📍 Location: {{ $agent->city ?? 'Unknown' }}
                 ({{ number_format($agent->latitude, 6) }}, {{ number_format($agent->longitude, 6) }})
               </p>
             @else
@@ -199,27 +275,23 @@
   </main>
 </div>
 
+
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script>
-  // Initialize map centered on Lebanon
+  // Leaflet map
   var map = L.map('map').setView([33.8938, 35.5018], 8);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 18,
       attribution: '© OpenStreetMap'
   }).addTo(map);
 
-  // Get agent data
   var agent = @json($agent);
-  
-  // Check if agent has location data
+
   var latitude = agent.latitude ? parseFloat(agent.latitude) : null;
   var longitude = agent.longitude ? parseFloat(agent.longitude) : null;
-  
+
   if (latitude && longitude && !isNaN(latitude) && !isNaN(longitude)) {
-      // Create marker for agent location
       var marker = L.marker([latitude, longitude]).addTo(map);
-      
-      // Create popup content
       var popupContent = '<div style="min-width: 150px;">';
       popupContent += '<b>' + (agent.name || 'My Profile') + '</b><br>';
       if (agent.city) {
@@ -227,21 +299,58 @@
       }
       popupContent += '<span style="color: #666; font-size: 0.85em;">Lat: ' + latitude.toFixed(6) + ', Lng: ' + longitude.toFixed(6) + '</span>';
       popupContent += '</div>';
-      
       marker.bindPopup(popupContent);
-      
-      // Center map on agent location
       map.setView([latitude, longitude], 12);
-      
-      console.log('Agent location marker added:', latitude, longitude);
   } else {
-      // Show message if no location data
       var noLocationDiv = document.createElement('div');
       noLocationDiv.className = 'p-4 text-center text-gray-600 dark:text-gray-400';
       noLocationDiv.innerHTML = '<p class="mb-2">📍 No location data available</p><p class="text-sm">Update your city in the profile to set your location.</p>';
       document.getElementById('map').appendChild(noLocationDiv);
-      
-      console.warn('Agent location not available. Latitude:', latitude, 'Longitude:', longitude);
+  }
+
+  // Notification dropdown toggle + mark-as-read
+  const notifButton      = document.getElementById('notifButton');
+  const notifDropdown    = document.getElementById('notifDropdown');
+  const notifDot         = document.getElementById('notifDot');
+  const notifUnreadText  = document.getElementById('notifUnreadText');
+  const unreadCountInit  = {{ isset($unreadCount) ? (int) $unreadCount : 0 }};
+  const markReadUrl      = "{{ route('agent.notifications.read') }}";
+  const csrfToken        = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+  if (notifButton && notifDropdown) {
+    notifButton.addEventListener('click', () => {
+      notifDropdown.classList.toggle('hidden');
+
+      // First time opening: mark notifications as read
+      if (!notifDropdown.classList.contains('hidden') &&
+          unreadCountInit > 0 &&
+          notifDropdown.dataset.read === '0') {
+
+        fetch(markReadUrl, {
+          method: 'POST',
+          headers: {
+            'X-CSRF-TOKEN': csrfToken,
+            'Accept': 'application/json'
+          },
+        }).then(() => {
+          notifDropdown.dataset.read = '1';
+          if (notifUnreadText) {
+            notifUnreadText.textContent = '0 unread';
+          }
+          if (notifDot) {
+            notifDot.remove();
+          }
+        }).catch(() => {
+          // fail silently on UI
+        });
+      }
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!notifButton.contains(e.target) && !notifDropdown.contains(e.target)) {
+        notifDropdown.classList.add('hidden');
+      }
+    });
   }
 </script>
 </body>

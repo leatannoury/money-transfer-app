@@ -11,10 +11,10 @@ use App\Models\Transaction;
 use App\Models\Beneficiary;
 use App\Services\CurrencyService;
 use Illuminate\Validation\Rule;
+use App\Models\AgentNotification; // ✅ added for agent notifications
 use App\Models\PaymentMethod;
 use App\Models\FakeCard;
 use App\Models\FakeBankAccount;
-
 
 class TransferController extends Controller
 {
@@ -43,9 +43,9 @@ class TransferController extends Controller
     }
 public function send(Request $request)
 {
-    $currencies = CurrencyService::getSupportedCurrencies();
-
     // Basic validation
+        $currencies = CurrencyService::getSupportedCurrencies();
+
     $request->validate([
         'search_type' => 'required|in:email,phone',
         'amount' => 'required|numeric|min:1',
@@ -54,8 +54,7 @@ public function send(Request $request)
         'service_type' => 'required|in:wallet_to_wallet,transfer_via_agent',
         'agent_id' => 'nullable|exists:users,id',
                 'payment_method' => 'required|in:wallet,credit_card,bank_account',
-                        'currency' => ['required', Rule::in(array_keys($currencies))],
-
+                
 
     ]);
 
@@ -76,14 +75,14 @@ public function send(Request $request)
     $transactionCurrency = $request->currency;
     $amountInUsd = round(CurrencyService::convert($amount, 'USD', $transactionCurrency), 2);
 
-    // Handle receiver
-    if ($request->search_type === 'email') {
-        $request->validate(['email' => 'required|email|exists:users,email']);
-        $receiver = User::where('email', $request->email)->first();
-    } else {
-        $request->validate(['phone' => 'required|exists:users,phone']);
-        $receiver = User::where('phone', $request->phone)->first();
-    }
+        // Handle receiver
+        if ($request->search_type === 'email') {
+            $request->validate(['email' => 'required|email|exists:users,email']);
+            $receiver = User::where('email', $request->email)->first();
+        } else {
+            $request->validate(['phone' => 'required|exists:users,phone']);
+            $receiver = User::where('phone', $request->phone)->first();
+        }
 
     if ($receiver->id === $sender->id) {
         return back()->withInput()->withErrors(['error' => 'You cannot send money to yourself.']);
@@ -159,8 +158,8 @@ public function send(Request $request)
     }
 }
 
-    // --- Process transfer ---
-    if ($serviceType === 'wallet_to_wallet') {
+        // --- Process transfer ---
+        if ($serviceType === 'wallet_to_wallet') {
 
         // Direct wallet-to-wallet
         $sender->balance -= $amount;
@@ -195,7 +194,7 @@ public function send(Request $request)
         // Otherwise, leave it as pending_agent for any agent to accept
         $status = $request->agent_id ? 'in_progress' : 'pending_agent';
         
-        Transaction::create([
+       $transaction= Transaction::create([
             'sender_id' => $sender->id,
             'receiver_id' => $receiver->id,
             'amount' => $amount,
@@ -205,13 +204,21 @@ public function send(Request $request)
             'agent_id' => $request->agent_id ?? null,
             'service_type' => $serviceType,
         ]);
+                    if ($transaction->agent_id) {
+                AgentNotification::create([
+                    'agent_id'       => $transaction->agent_id,
+                    'transaction_id' => $transaction->id,
+                    'title'          => 'New money transfer request',
+                    'message'        => "You have a new transfer of \${$transaction->amount} from {$sender->name} to {$receiver->name}.",
+                ]);
+            }
 
-        $message = $request->agent_id 
-            ? 'Your transfer request has been sent to the selected agent.' 
-            : 'Your transfer request has been sent. An agent will be assigned soon.';
-        
-        return redirect()->route('user.transactions')->with('success', $message);
+            $message = $request->agent_id 
+                ? 'Your transfer request has been sent to the selected agent.' 
+                : 'Your transfer request has been sent. An agent will be assigned soon.';
+            
+            return redirect()->route('user.transactions')->with('success', $message);
+        }
     }
-}
 
 }

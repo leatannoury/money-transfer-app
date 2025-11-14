@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Agent;
 
+use App\Models\User;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -17,8 +18,7 @@ class TransactionController extends Controller
     {
         $agent = Auth::user();
 
-        // Agent can see transactions assigned to them OR pending ones (pending_agent status)
-        $transactions = Transaction::where('service_type', 'transfer_via_agent') // Only show agent-required transactions
+        $transactions = Transaction::with(['sender', 'receiver']) // 👈 add this
             ->where(function($query) use ($agent) {
                 $query->where('status', 'pending_agent')
                       ->orWhere('agent_id', $agent->id);
@@ -27,6 +27,9 @@ class TransactionController extends Controller
             ->get();
 
         return view('agent.transactions', compact('transactions', 'agent'));
+        $agent->agentNotifications()
+    ->where('is_read', false)
+    ->update(['is_read' => true]);
     }
 
     /**
@@ -55,41 +58,178 @@ class TransactionController extends Controller
      */
     public function complete($id)
     {
-        $agent = Auth::user();
-        $transaction = Transaction::where('id', $id)
-            ->where('agent_id', $agent->id)
-            ->firstOrFail();
+        $transaction = Transaction::findOrFail($id);
+        $agent = auth()->user(); // the logged-in agent
 
-        if ($transaction->status !== 'in_progress') {
-            return back()->with('error', 'You can only complete transactions in progress.');
+        // ✅ make sure this transaction belongs to this agent and is in progress
+        if ($transaction->agent_id !== $agent->id || $transaction->status !== 'in_progress') {
+            return back()->with('error', 'Unauthorized or invalid transaction.');
         }
 
-        // Fetch sender and receiver
-        $sender = $transaction->sender;
-        $receiver = $transaction->receiver;
+        // ✅ fetch sender and receiver
+        $sender   = User::find($transaction->sender_id);
+        $receiver = User::find($transaction->receiver_id);
 
-        if (!$sender || !$receiver) {
-            return back()->with('error', 'Transaction sender or receiver not found.');
-        }
+        // ✅ agent commission rate (e.g., 10%)
+        $commissionRate   = $agent->commission; // assuming it's stored as 10 for 10%
+        $commissionAmount = ($transaction->amount * $commissionRate) / 100;
 
-        // Check sender balance
+        // ✅ receiver gets the rest
+        $receiverAmount = $transaction->amount - $commissionAmount;
+
+        // ✅ update balances
         if ($sender->balance < $transaction->amount) {
             return back()->with('error', 'Sender does not have enough balance.');
         }
 
-        // ✅ Update balances
-        $sender->balance -= $transaction->amount;
-        $receiver->balance += $transaction->amount;
+        $sender->balance   -= $transaction->amount;
+        $receiver->balance += $receiverAmount;
+        $agent->balance    += $commissionAmount;
 
+        // ✅ mark transaction completed
+        $transaction->status = 'completed';
+
+        // ✅ save all changes
         $sender->save();
         $receiver->save();
-
-        // ✅ Mark transaction as completed
-        $transaction->status = 'completed';
+        $agent->save();
         $transaction->save();
 
-        Log::info("Transaction #{$transaction->id} completed by agent #{$agent->id}");
-
-        return back()->with('success', 'Transaction completed successfully! Balances updated.');
+        return back()->with('success', 'Transaction completed successfully. Commission credited.');
     }
+
+    public function reject($id)
+    {
+        $transaction = Transaction::findOrFail($id);
+
+        // Only allow if status is still in progress
+        if ($transaction->status == 'in_progress') {
+            $transaction->status = 'failed'; // ✅ add quotes
+            $transaction->save();
+        }
+
+        return redirect()->back()->with('success', 'Transaction rejected successfully.');
+    }
+
+    /* -----------------------------------------------------------------
+     |  NEW: CASH-IN / CASH-OUT OPERATIONS
+     |------------------------------------------------------------------*/
+
+    /**
+     * Show cash-in / cash-out form to the agent
+     */
+    public function cashForm()
+    {
+        $agent = Auth::user();
+        return view('agent.cash', compact('agent'));
+    }
+
+    /**
+     * Agent CASH-IN:
+     * User gives cash, agent loads money into user wallet.
+     */
+public function cashIn(Request $request)
+{
+    $request->validate([
+        'search_type' => 'required|in:email,phone',
+        'email'       => 'nullable|email',
+        'phone'       => 'nullable|string',
+        'amount'      => 'required|numeric|min:1',
+    ]);
+
+    $agent  = auth()->user();
+    $amount = $request->amount;
+    $commission = $amount * 0.005;   // 🔥 0.5%
+
+    // find user
+    if ($request->search_type === 'email') {
+        $user = User::where('email', $request->email)->firstOrFail();
+    } else {
+        $user = User::where('phone', $request->phone)->firstOrFail();
+    }
+
+    // user must PAY the commission
+    $totalToDeduct = $amount + $commission;
+
+    if ($user->balance < $totalToDeduct) {
+        return back()->withErrors(['amount' => 'User does not have enough balance for amount + commission.']);
+    }
+
+    // update balances
+    $user->balance -= $commission; // commission only
+    $user->balance += $amount;     // cash-in amount
+    $agent->balance += $commission;
+
+    $user->save();
+    $agent->save();
+
+    Transaction::create([
+        'sender_id'    => $agent->id,
+        'receiver_id'  => $user->id,
+        'amount'       => $amount,
+        'currency'     => 'USD',
+        'service_type' => 'cash_in',
+        'agent_id'     => $agent->id,
+        'status'       => 'completed',
+    ]);
+
+    return back()->with('success', "Cash-In completed. Commission (0.5%) taken: $$commission");
+}
+
+
+
+    /**
+     * Agent CASH-OUT:
+     * User withdraws cash from wallet (agent gives physical money).
+     */
+public function cashOut(Request $request)
+{
+    $request->validate([
+        'search_type_out' => 'required|in:email,phone',
+        'email_out'       => 'nullable|email',
+        'phone_out'       => 'nullable|string',
+        'amount_out'      => 'required|numeric|min:1',
+    ]);
+
+    $agent  = auth()->user();
+    $amount = $request->amount_out;
+    $commission = $amount * 0.005;   // 🔥 0.5%
+
+    // find user
+    if ($request->search_type_out === 'email') {
+        $user = User::where('email', $request->email_out)->firstOrFail();
+    } else {
+        $user = User::where('phone', $request->phone_out)->firstOrFail();
+    }
+
+    $totalToDeduct = $amount + $commission;
+
+    // check user balance
+    if ($user->balance < $totalToDeduct) {
+        return back()->withErrors(['amount_out' => 'User does not have enough balance for amount + commission.']);
+    }
+
+    // user pays amount + commission
+    $user->balance -= $totalToDeduct;
+    $agent->balance += $commission;
+
+    $user->save();
+    $agent->save();
+
+    Transaction::create([
+        'sender_id'    => $user->id,
+        'receiver_id'  => $agent->id,
+        'amount'       => $amount,
+        'currency'     => 'USD',
+        'service_type' => 'cash_out',
+        'agent_id'     => $agent->id,
+        'status'       => 'completed',
+    ]);
+
+    return back()->with('success', "Cash-Out completed. Commission (0.5%) taken: $$commission");
+}
+
+
+
+
 }
