@@ -35,7 +35,6 @@ class AppServiceProvider extends ServiceProvider
             'status' => 'active',
         ]);
 
-        // Assign role (make sure roles are already seeded)
         $admin->assignRole('Admin');
     }
 

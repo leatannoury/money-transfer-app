@@ -18,9 +18,13 @@ class TransferController extends Controller
 {
     public function index()
     {
+        // Show form to send money
         $users = User::where('id', '!=', Auth::id())->get();
         $beneficiaries = Beneficiary::where('user_id', Auth::id())->get();
+        $currencies = CurrencyService::getSupportedCurrencies();
+        $selectedCurrency = session('user_currency', 'USD');
 
+        // Get available agents
         $availableAgents = User::role('Agent')
             ->where('is_available', true)
             ->where('status', 'active')
@@ -31,17 +35,13 @@ class TransferController extends Controller
         $cards = Auth::user()->paymentMethods()->where('type', 'credit_card')->get();
         $banks = Auth::user()->paymentMethods()->where('type', 'bank_account')->get();
 
-        // Ensure these are defined for the view
-        $currencies = CurrencyService::getSupportedCurrencies();
-        $selectedCurrency = session('user_currency', 'USD');
-
         return view('user.transfer', compact(
-            'users', 
-            'beneficiaries', 
-            'availableAgents', 
-            'cards', 
-            'banks', 
-            'currencies', 
+            'users',
+            'beneficiaries',
+            'availableAgents',
+            'cards',
+            'banks',
+            'currencies',
             'selectedCurrency'
         ));
     }
@@ -51,6 +51,7 @@ class TransferController extends Controller
         $currencies = CurrencyService::getSupportedCurrencies();
         $selectedCurrency = session('user_currency', 'USD');
 
+        // Basic validation
         $request->validate([
             'search_type' => 'required|in:email,phone',
             'amount' => 'required|numeric|min:1',
@@ -73,13 +74,12 @@ class TransferController extends Controller
         if ($serviceType === 'transfer_via_agent') {
             $request->validate(['agent_id' => 'required|exists:users,id']);
             $selectedAgent = User::findOrFail($request->agent_id);
-
             if (!$selectedAgent->hasRole('Agent') || !$selectedAgent->is_available || $selectedAgent->status !== 'active') {
                 return back()->withInput()->withErrors(['agent_id' => 'Selected agent is not available.']);
             }
         }
 
-        // Receiver
+        // Determine receiver
         if ($request->search_type === 'email') {
             $request->validate(['email' => 'required|email|exists:users,email']);
             $receiver = User::where('email', $request->email)->first();
@@ -92,42 +92,35 @@ class TransferController extends Controller
             return back()->withInput()->withErrors(['error' => 'You cannot send money to yourself.']);
         }
 
-        // Payment method & balance checks
-        switch ($request->payment_method) {
-            case 'credit_card':
-                $request->validate(['card_id' => 'required|exists:payment_methods,id']);
-                $paymentMethod = PaymentMethod::findOrFail($request->card_id);
-                $card = FakeCard::where('card_number', 'like', '%'.$paymentMethod->last4)->firstOrFail();
-
-                if ($card->balance < $amount) {
-                    return back()->withInput()->withErrors([
-                        'amount' => "Insufficient balance on selected credit card. Available: {$card->balance}"
-                    ]);
-                }
-                break;
-
-            case 'bank_account':
-                $request->validate(['bank_id' => 'required|exists:payment_methods,id']);
-                $paymentMethod = PaymentMethod::findOrFail($request->bank_id);
-                $bank = FakeBankAccount::where('account_number', 'like', '%'.$paymentMethod->last4)->firstOrFail();
-
-                if ($bank->balance < $amount) {
-                    return back()->withInput()->withErrors([
-                        'amount' => "Insufficient balance in selected bank account. Available: {$bank->balance}"
-                    ]);
-                }
-                break;
-
-            case 'wallet':
-                if ($sender->balance < $amount) {
-                    return back()->withInput()->withErrors([
-                        'amount' => "Insufficient wallet balance. Available: {$sender->balance}"
-                    ]);
-                }
-                break;
+        // Payment method and balance checks
+        if ($request->payment_method === 'credit_card') {
+            $request->validate(['card_id' => 'required|exists:payment_methods,id']);
+            $paymentMethod = PaymentMethod::findOrFail($request->card_id);
+            $card = FakeCard::where('card_number', 'like', '%'.$paymentMethod->last4)->firstOrFail();
+            if ($card->balance < $amount) {
+                return back()->withInput()->withErrors([
+                    'amount' => "Insufficient balance on selected credit card. Available: {$card->balance}"
+                ]);
+            }
+        } elseif ($request->payment_method === 'bank_account') {
+            $request->validate(['bank_id' => 'required|exists:payment_methods,id']);
+            $paymentMethod = PaymentMethod::findOrFail($request->bank_id);
+            $bank = FakeBankAccount::where('account_number', 'like', '%'.$paymentMethod->last4)->firstOrFail();
+            if ($bank->balance < $amount) {
+                return back()->withInput()->withErrors([
+                    'amount' => "Insufficient balance in selected bank account. Available: {$bank->balance}"
+                ]);
+            }
+        } else {
+            // Wallet
+            if ($sender->balance < $amount) {
+                return back()->withInput()->withErrors([
+                    'amount' => "Insufficient wallet balance. Available: {$sender->balance}"
+                ]);
+            }
         }
 
-        // Process wallet to wallet or payment methods
+        // Process wallet or payment methods
         if ($serviceType === 'wallet_to_wallet') {
             if ($request->payment_method === 'wallet') {
                 $sender->balance -= $amount;
