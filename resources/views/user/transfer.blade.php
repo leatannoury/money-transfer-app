@@ -10,6 +10,7 @@
   <script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet"/>
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
+ 
   <script>
     tailwind.config = {
       darkMode: "class",
@@ -468,6 +469,7 @@
       });
   }
 
+
   // Currency label sync
   const currencySelect = document.getElementById('currency');
   const amountCurrencyLabel = document.getElementById('amount-currency-label');
@@ -498,6 +500,17 @@ paymentMethodSelect.addEventListener('change', togglePaymentDropdowns);
 window.addEventListener('DOMContentLoaded', togglePaymentDropdowns);
 
 </script>
+@if(session('msg'))
+
+<script>
+    Swal.fire({
+        title: '{{ session('type') === "warning" ? "⚠ Suspicious Transaction!" : "Success" }}',
+        text: "{{ session('msg') }}",
+        icon: '{{ session('type') }}',
+        confirmButtonText: 'Ok',
+    });
+</script>
+@endif
 
 
 </body>
