@@ -6,6 +6,7 @@ use Illuminate\Support\ServiceProvider;
 use Spatie\Permission\Models\Role;
 use Illuminate\Support\Facades\Artisan;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 
 
 class AppServiceProvider extends ServiceProvider
@@ -34,10 +35,17 @@ class AppServiceProvider extends ServiceProvider
             'status' => 'active',
         ]);
 
-        // Assign role (make sure roles are already seeded)
         $admin->assignRole('Admin');
     }
-    
+
+     if (DB::table('fake_bank_accounts')->count() === 0) {
+            Artisan::call('db:seed', ['--class' => 'FakeBankAccountsSeeder']);
+        }
+
+        // 4️⃣ Seed fake cards if table is empty
+        if (DB::table('fake_cards')->count() === 0) {
+            Artisan::call('db:seed', ['--class' => 'FakeCardsSeeder']);
+        }
 
     }
 
