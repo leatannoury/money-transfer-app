@@ -68,6 +68,10 @@
 <div class="flex-1 p-8 overflow-y-auto">
 <!-- Stats -->
 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+   <div class="flex flex-col gap-2 rounded-xl p-6 bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark">
+        <p class="text-gray-500 dark:text-gray-400 text-base font-medium">Admin Balance</p>
+        <p class="text-text-light dark:text-text-dark text-3xl font-bold">${{ number_format($adminBalance, 2) }}</p>
+    </div>
 <div class="flex flex-col gap-2 rounded-xl p-6 bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark">
 <p class="text-gray-500 dark:text-gray-400 text-base font-medium">Total Users</p>
 <p class="text-text-light dark:text-text-dark text-3xl font-bold">{{$totalUsers}}</p>

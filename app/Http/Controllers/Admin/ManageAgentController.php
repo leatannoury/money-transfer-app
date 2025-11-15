@@ -67,7 +67,6 @@ public function storeAgent(Request $request) {
         'name' => 'required|string|max:255',
         'email' => 'required|email|unique:users,email',
         'password' => 'required|confirmed|min:6',
-        // Lebanese phone: exactly 8 digits (UI shows +961 prefix)
         'phone' => ['required','string','regex:/^\d{8}$/','unique:users,phone'],
         'city' => 'required|string|max:20',  
         'commission' => 'required|numeric|min:0',

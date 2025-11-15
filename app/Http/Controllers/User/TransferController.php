@@ -121,34 +121,52 @@ class TransferController extends Controller
         }
 
         // Process wallet or payment methods
-        if ($serviceType === 'wallet_to_wallet') {
-            if ($request->payment_method === 'wallet') {
-                $sender->balance -= $amount;
-            } elseif ($request->payment_method === 'credit_card') {
-                $card->balance -= $amount;
-                $card->save();
-            } elseif ($request->payment_method === 'bank_account') {
-                $bank->balance -= $amount;
-                $bank->save();
-            }
+       if ($serviceType === 'wallet_to_wallet') {
+    $admin = User::role('Admin')->first();
+    $adminCommission = $admin->commission ?? 0;
+    $fee = round(($amount * $adminCommission) / 100, 2);
 
-            $sender->save();
-            $receiver->balance += $amount;
-            $receiver->save();
+    // Determine if transaction is suspicious
+    $transactionStatus = $amount > 1000 ? 'suspicious' : 'completed';
 
-            Transaction::create([
-                'sender_id' => $sender->id,
-                'receiver_id' => $receiver->id,
-                'amount' => $amount,
-                'currency' => $transactionCurrency,
-                'status' => 'completed',
-                'agent_id' => null,
-                'service_type' => $serviceType,
-                'payment_method' => $request->payment_method,
-            ]);
-
-            return redirect()->route('user.transactions')->with('success', 'Money sent successfully!');
+    if ($transactionStatus !== 'suspicious') {
+        // Only update balances if NOT suspicious
+        if ($request->payment_method === 'wallet') {
+            $sender->balance -= $amount;
+        } elseif ($request->payment_method === 'credit_card') {
+            $card->balance -= $amount;
+            $card->save();
+        } elseif ($request->payment_method === 'bank_account') {
+            $bank->balance -= $amount;
+            $bank->save();
         }
+
+        $sender->save();
+        $receiver->balance += $amount - $fee;
+        $receiver->save();
+        $admin->balance += $fee;
+        $admin->save();
+    }
+
+    // Create transaction (balances updated only if not suspicious)
+    Transaction::create([
+        'sender_id' => $sender->id,
+        'receiver_id' => $receiver->id,
+        'amount' => $amount,
+        'currency' => $transactionCurrency,
+        'status' => $transactionStatus,
+        'agent_id' => $admin->id,
+        'service_type' => $serviceType,
+        'payment_method' => $request->payment_method,
+        // 'fee' => $fee, // store fee for later admin approval
+    ]);
+
+    $msg = $transactionStatus === 'suspicious'
+        ? 'Transaction flagged as suspicious and awaiting admin approval.'
+        : 'Money sent successfully!';
+
+    return redirect()->route('user.transactions')->with('success', $msg);
+}
 
         // Transfer via agent
         $status = $request->agent_id ? 'in_progress' : 'pending_agent';

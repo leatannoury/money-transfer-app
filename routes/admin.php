@@ -6,6 +6,8 @@ use App\Http\Controllers\Admin\ManageUserController;
 use App\Http\Controllers\Admin\ManageAgentController;
 use App\Http\Controllers\Admin\ManageTransactionController;
 use App\Http\Controllers\Admin\ReviewManagementController;
+use App\Http\Controllers\Admin\FeesController;
+use App\Http\Controllers\Admin\SuspiciousController;
 
 Route::middleware(['auth','check.banned','role:Admin'])->prefix('admin')->name('admin.')->group(function () {
   Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
@@ -32,4 +34,12 @@ Route::get('/manageTransactions',[ManageTransactionController::class,'manageTran
 Route::get('/reviews', [ReviewManagementController::class, 'index'])->name('reviews.index');
 Route::post('/reviews/{review}/approve', [ReviewManagementController::class, 'approve'])->name('reviews.approve');
 Route::delete('/reviews/{review}', [ReviewManagementController::class, 'destroy'])->name('reviews.destroy');
+
+
+Route::get('/fees', [FeesController::class, 'index'])->name('fees');
+Route::post('/fees/update', [FeesController::class, 'update'])->name('fees.update');
+
+Route::get('/transactions/suspicious', [ManageTransactionController::class, 'suspiciousTransactions'])->name('transactions.suspicious');
+    Route::post('/transactions/{id}/accept', [SuspiciousController::class, 'acceptSuspicious'])->name('transactions.accept');
+    Route::post('/transactions/{id}/reject', [SuspiciousController::class, 'rejectSuspicious'])->name('transactions.reject');
 });
