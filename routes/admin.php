@@ -11,6 +11,7 @@ use App\Http\Controllers\Admin\SuspiciousController;
 
 Route::middleware(['auth','check.banned','role:Admin'])->prefix('admin')->name('admin.')->group(function () {
   Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+Route::get('/dashboard/hourly-fees', [DashboardController::class, 'getHourlyFees'])->name('dashboard.hourlyFees');
   Route::get('/manageUsers', [ManageUserController::class, 'manageUsers'])->name('users');
 
   Route::post('/users/{id}/ban', [ManageUserController::class, 'banUser'])->name('users.ban');

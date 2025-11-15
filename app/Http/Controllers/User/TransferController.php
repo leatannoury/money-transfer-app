@@ -165,6 +165,7 @@ class TransferController extends Controller
         ? 'Transaction flagged as suspicious and awaiting admin approval.'
         : 'Money sent successfully!';
 
+
     return redirect()->route('user.transactions')->with('success', $msg);
 }
 

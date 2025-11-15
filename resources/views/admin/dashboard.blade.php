@@ -87,6 +87,65 @@
 <p class="text-text-light dark:text-text-dark text-3xl font-bold">{{$totalTransactions}}</p>
 </div>
 </div>
+
+
+<!-- Chart Section -->
+<div class="mt-6 p-6 bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark">
+    <h3 class="text-text-light dark:text-text-dark text-lg font-bold mb-4">Earnings (Last 24 Hours)</h3>
+    <canvas id="revenueChart" class="w-full h-64"></canvas>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+let revenueChart = null;
+
+function fetchAndRenderRevenueChart() {
+    fetch('{{ route("admin.dashboard.hourlyFees") }}')
+        .then(res => res.json())
+        .then(data => {
+            const labels = data.map(d => d.hour);
+            const totals = data.map(d => d.total_fee);
+
+            const ctx = document.getElementById('revenueChart').getContext('2d');
+
+            if (revenueChart) {
+                revenueChart.data.labels = labels;
+                revenueChart.data.datasets[0].data = totals;
+                revenueChart.update();
+            } else {
+                revenueChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Earnings ($)',
+                            data: totals,
+                            backgroundColor: 'rgba(0,0,0,1)',
+                            borderColor: 'rgba(0,0,0,1)',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: { display: false }
+                        },
+                        scales: {
+                            y: { beginAtZero: true }
+                        }
+                    }
+                });
+            }
+        });
+}
+
+// Initial chart load
+fetchAndRenderRevenueChart();
+</script>
+
+
+
+
 <!-- SectionHeader & Table -->
 <div class="mt-8">
 <h2 class="text-text-light dark:text-text-dark text-xl font-bold mb-4">Last Transactions</h2>
