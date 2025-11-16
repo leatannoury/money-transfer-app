@@ -65,12 +65,26 @@
         <!-- Header Actions -->
         <div class="flex justify-between items-center mb-6">
           <h3 class="text-lg font-semibold">Agent List</h3>
-           <a href="{{ route('admin.agents.add') }}">
-        <button class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition flex items-center gap-1">
-            <span class="material-symbols-outlined text-sm">add</span>
-            <span>Add Agent</span>
-        </button>
-    </a>
+          <div class="flex gap-2">
+            <a href="{{ route('admin.agents.requests') }}">
+              <button class="bg-warning text-white px-4 py-2 rounded-lg hover:bg-yellow-600 transition flex items-center gap-1">
+                <span class="material-symbols-outlined text-sm">pending_actions</span>
+                <span>View Requests</span>
+                @php
+                  $pendingCount = \App\Models\User::where('agent_request_status', 'pending')->count();
+                @endphp
+                @if($pendingCount > 0)
+                  <span class="bg-red-500 text-white text-xs rounded-full px-2 py-0.5">{{ $pendingCount }}</span>
+                @endif
+              </button>
+            </a>
+            <a href="{{ route('admin.agents.add') }}">
+              <button class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition flex items-center gap-1">
+                <span class="material-symbols-outlined text-sm">add</span>
+                <span>Add Agent</span>
+              </button>
+            </a>
+          </div>
         </div>
 
         <!-- Static Table -->

@@ -110,13 +110,13 @@
 
                     {{-- Amount --}}
                     <td class="px-6 py-3 font-semibold">
-                      ${{ number_format($tx->amount, 2) }}
+                      {{ \App\Services\CurrencyService::format($tx->amount, $tx->currency ?? 'USD') }}
                     </td>
 
                     {{-- Agent Commission --}}
                     <td class="px-6 py-3">
                       @if($commissionRate && $tx->status !== 'failed')
-                        ${{ number_format($commissionAmount, 2) }}
+                        {{ \App\Services\CurrencyService::format($commissionAmount, $tx->currency ?? 'USD') }}
                         <span class="text-xs text-gray-500">
                           ({{ rtrim(rtrim(number_format($commissionRate, 2), '0'), '.') }}%)
                         </span>

@@ -67,7 +67,6 @@ public function storeAgent(Request $request) {
         'name' => 'required|string|max:255',
         'email' => 'required|email|unique:users,email',
         'password' => 'required|confirmed|min:6',
-        // Lebanese phone: exactly 8 digits (UI shows +961 prefix)
         'phone' => ['required','string','regex:/^\d{8}$/','unique:users,phone'],
         'city' => 'required|string|max:20',  
         'commission' => 'required|numeric|min:0',
@@ -126,5 +125,92 @@ public function updateAgent(Request $request, $id)
     return redirect()->route('admin.agents')->with('success', "{$user->name} updated successfully.");
 }
 
+/**
+ * View all agent requests
+ */
+public function agentRequests(Request $request)
+{
+    $query = User::where('agent_request_status', 'pending')
+        ->whereDoesntHave('roles', function($q) {
+            $q->whereIn('name', ['Admin', 'Agent']);
+        })
+        ->select('id', 'name', 'email', 'phone', 'city', 'agent_request_status', 'created_at');
+
+    // Search filters
+    if ($request->filled('email')) {
+        $query->where('email', 'like', "%{$request->email}%");
+    }
+
+    if ($request->filled('phone')) {
+        $query->where('phone', 'like', "%{$request->phone}%");
+    }
+
+    if ($request->filled('city')) {
+        $query->where('city', 'like', "%{$request->city}%");
+    }
+
+    $requests = $query->orderBy('created_at', 'desc')->paginate(10)->withQueryString();
+    $totalRequests = User::where('agent_request_status', 'pending')->count();
+
+    return view('admin.ManageAgent.agentRequests', compact('requests', 'totalRequests'));
+}
+
+/**
+ * Approve agent request
+ */
+public function approveAgentRequest($id, Request $request)
+{
+    $user = User::findOrFail($id);
+
+    // Validate that user has a pending request
+    if ($user->agent_request_status !== 'pending') {
+        return redirect()->back()->with('error', 'This user does not have a pending request.');
+    }
+
+    // Validate required fields
+    $request->validate([
+        'commission' => 'required|numeric|min:0|max:100',
+    ], [
+        'commission.required' => 'Commission rate is required.',
+        'commission.numeric' => 'Commission must be a number.',
+        'commission.min' => 'Commission cannot be negative.',
+        'commission.max' => 'Commission cannot exceed 100%.',
+    ]);
+
+    // Remove User role if it exists, then assign Agent role
+    if ($user->hasRole('User')) {
+        $user->removeRole('User');
+    }
+    
+    // Assign agent role
+    $user->assignRole('Agent');
+
+    // Update user status
+    $user->agent_request_status = 'approved';
+    $user->commission = $request->commission;
+    $user->status = 'active';
+    $user->save();
+
+    return redirect()->route('admin.agents.requests')->with('success', "{$user->name}'s agent request has been approved.");
+}
+
+/**
+ * Reject agent request
+ */
+public function rejectAgentRequest($id)
+{
+    $user = User::findOrFail($id);
+
+    // Validate that user has a pending request
+    if ($user->agent_request_status !== 'pending') {
+        return redirect()->back()->with('error', 'This user does not have a pending request.');
+    }
+
+    // Update request status
+    $user->agent_request_status = 'rejected';
+    $user->save();
+
+    return redirect()->route('admin.agents.requests')->with('success', "{$user->name}'s agent request has been rejected.");
+}
 
 }

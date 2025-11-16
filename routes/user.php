@@ -42,5 +42,7 @@ Route::put('/payment-methods/{method}/primary', [PaymentMethodController::class,
 
 
     Route::get('/settings', [SettingsController::class, 'index'])->name('settings');
-Route::resource('payment-methods', PaymentMethodController::class);
+    Route::post('/settings/request-agent', [SettingsController::class, 'requestAgentStatus'])->name('settings.request-agent');
+    Route::post('/settings/cancel-agent-request', [SettingsController::class, 'cancelAgentRequest'])->name('settings.cancel-agent-request');
+    Route::resource('payment-methods', PaymentMethodController::class);
 });

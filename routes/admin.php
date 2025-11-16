@@ -6,9 +6,12 @@ use App\Http\Controllers\Admin\ManageUserController;
 use App\Http\Controllers\Admin\ManageAgentController;
 use App\Http\Controllers\Admin\ManageTransactionController;
 use App\Http\Controllers\Admin\ReviewManagementController;
+use App\Http\Controllers\Admin\FeesController;
+use App\Http\Controllers\Admin\SuspiciousController;
 
 Route::middleware(['auth','check.banned','role:Admin'])->prefix('admin')->name('admin.')->group(function () {
   Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+Route::get('/dashboard/hourly-fees', [DashboardController::class, 'getHourlyFees'])->name('dashboard.hourlyFees');
   Route::get('/manageUsers', [ManageUserController::class, 'manageUsers'])->name('users');
 
   Route::post('/users/{id}/ban', [ManageUserController::class, 'banUser'])->name('users.ban');
@@ -26,10 +29,23 @@ Route::post('/users/{id}/update', [ManageUserController::class, 'updateUser'])->
   Route::post('/agents/store', [ManageAgentController::class, 'storeAgent'])->name('agents.store');
   Route::get('/agents/{id}/edit', [ManageAgentController::class, 'editAgentForm'])->name('agents.edit');
 Route::post('/agents/{id}/update', [ManageAgentController::class, 'updateAgent'])->name('agents.update');
+  
+  // Agent Requests
+  Route::get('/agents/requests', [ManageAgentController::class, 'agentRequests'])->name('agents.requests');
+  Route::post('/agents/requests/{id}/approve', [ManageAgentController::class, 'approveAgentRequest'])->name('agents.requests.approve');
+  Route::post('/agents/requests/{id}/reject', [ManageAgentController::class, 'rejectAgentRequest'])->name('agents.requests.reject');
 
 
 Route::get('/manageTransactions',[ManageTransactionController::class,'manageTransaction'])->name("transactions");
 Route::get('/reviews', [ReviewManagementController::class, 'index'])->name('reviews.index');
 Route::post('/reviews/{review}/approve', [ReviewManagementController::class, 'approve'])->name('reviews.approve');
 Route::delete('/reviews/{review}', [ReviewManagementController::class, 'destroy'])->name('reviews.destroy');
+
+
+Route::get('/fees', [FeesController::class, 'index'])->name('fees');
+Route::post('/fees/update', [FeesController::class, 'update'])->name('fees.update');
+
+Route::get('/transactions/suspicious', [ManageTransactionController::class, 'suspiciousTransactions'])->name('transactions.suspicious');
+    Route::post('/transactions/{id}/accept', [SuspiciousController::class, 'acceptSuspicious'])->name('transactions.accept');
+    Route::post('/transactions/{id}/reject', [SuspiciousController::class, 'rejectSuspicious'])->name('transactions.reject');
 });

@@ -150,66 +150,87 @@ class TransferController extends Controller
             }
         }
 
-        // Process wallet or payment methods
+        // Process based on service type
         if ($serviceType === 'wallet_to_wallet') {
-            if ($request->payment_method === 'wallet') {
-                // Deduct in USD since balance is stored in USD
-                $sender->balance -= $amountInUsd;
-            } elseif ($request->payment_method === 'credit_card') {
-                // Deduct in USD since card balance is stored in USD
-                $card->balance -= $amountInUsd;
-                $card->save();
-            } elseif ($request->payment_method === 'bank_account') {
-                // Deduct in USD since bank balance is stored in USD
-                $bank->balance -= $amountInUsd;
-                $bank->save();
+            // Wallet to wallet transfer
+            $admin = User::role('Admin')->first();
+            $adminCommission = $admin->commission ?? 0;
+            
+            // Calculate fee based on USD amount for consistency (all balances are in USD)
+            $feeInUsd = round(($amountInUsd * $adminCommission) / 100, 2);
+
+            // Determine if transaction is suspicious (check USD equivalent, not transaction currency)
+            $transactionStatus = $amountInUsd > 1000 ? 'suspicious' : 'completed';
+
+            // Only update balances if transaction is not suspicious
+            if ($transactionStatus !== 'suspicious') {
+                // Deduct from sender's payment method
+                if ($request->payment_method === 'wallet') {
+                    $sender->balance -= $amountInUsd;
+                    $sender->save();
+                } elseif ($request->payment_method === 'credit_card') {
+                    $card->balance -= $amountInUsd;
+                    $card->save();
+                } elseif ($request->payment_method === 'bank_account') {
+                    $bank->balance -= $amountInUsd;
+                    $bank->save();
+                }
+
+                // Add to receiver (minus fee)
+                $receiver->balance += $amountInUsd - $feeInUsd;
+                $receiver->save();
+                
+                // Add fee to admin
+                $admin->balance += $feeInUsd;
+                $admin->save();
             }
 
-            $sender->save();
-            // Add in USD since receiver balance is stored in USD
-            $receiver->balance += $amountInUsd;
-            $receiver->save();
-
+            // Create transaction record
             Transaction::create([
                 'sender_id' => $sender->id,
                 'receiver_id' => $receiver->id,
                 'amount' => $amount,
                 'currency' => $transactionCurrency,
-                'status' => 'completed',
-                'agent_id' => null,
+                'status' => $transactionStatus,
+                'agent_id' => $admin->id,
+                'service_type' => $serviceType,
+                'payment_method' => $request->payment_method,
+                // 'fee' => $feeInUsd, // store fee for later admin approval
+            ]);
+
+            $message = $transactionStatus === 'suspicious'
+                ? 'Transaction flagged as suspicious and awaiting admin approval.'
+                : 'Money sent successfully!';
+
+            return redirect()->route('user.transactions')->with('success', $message);
+        } else {
+            // Transfer via agent
+            $status = $request->agent_id ? 'in_progress' : 'pending_agent';
+            $transaction = Transaction::create([
+                'sender_id' => $sender->id,
+                'receiver_id' => $receiver->id,
+                'amount' => $amount,
+                'currency' => $transactionCurrency,
+                'status' => $status,
+                'agent_id' => $request->agent_id ?? null,
                 'service_type' => $serviceType,
                 'payment_method' => $request->payment_method,
             ]);
 
-            return redirect()->route('user.transactions')->with('success', 'Money sent successfully!');
+            if ($transaction->agent_id) {
+                AgentNotification::create([
+                    'agent_id' => $transaction->agent_id,
+                    'transaction_id' => $transaction->id,
+                    'title' => 'New money transfer request',
+                    'message' => "You have a new transfer of " . CurrencyService::format($transaction->amount, $transaction->currency ?? 'USD') . " from {$sender->name} to {$receiver->name}.",
+                ]);
+            }
+
+            $message = $request->agent_id
+                ? 'Your transfer request has been sent to the selected agent.'
+                : 'Your transfer request has been sent. An agent will be assigned soon.';
+
+            return redirect()->route('user.transactions')->with('success', $message);
         }
-
-        // Transfer via agent
-        $status = $request->agent_id ? 'in_progress' : 'pending_agent';
-        $transaction = Transaction::create([
-            'sender_id' => $sender->id,
-            'receiver_id' => $receiver->id,
-            'amount' => $amount,
-            'currency' => $transactionCurrency,
-            'status' => $status,
-            'agent_id' => $request->agent_id ?? null,
-            'service_type' => $serviceType,
-            'payment_method' => $request->payment_method,
-        ]);
-
-        if ($transaction->agent_id) {
-            AgentNotification::create([
-                'agent_id' => $transaction->agent_id,
-                'transaction_id' => $transaction->id,
-                'title' => 'New money transfer request',
-                'message' => "You have a new transfer of \${$transaction->amount} from {$sender->name} to {$receiver->name}.",
-            ]);
-        }
-
-        $message = $request->agent_id
-            ? 'Your transfer request has been sent to the selected agent.'
-            : 'Your transfer request has been sent. An agent will be assigned soon.';
-
-        return redirect()->route('user.transactions')->with('success', $message);
     }
 }
