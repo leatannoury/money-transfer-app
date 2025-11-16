@@ -33,6 +33,25 @@
             </a>
           </li>
           <li>
+              <a href="{{ route('admin.fees') }}" 
+                class="flex items-center gap-3 px-4 py-2.5 rounded-lg text-gray-500 
+                        hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 transition-colors">
+                <span class="material-symbols-outlined">payments</span>
+                <span class="text-sm font-medium">Transaction Fees</span>
+              </a>
+          </li>
+
+          <li>
+            <a href="{{ route('admin.transactions.suspicious') }}" 
+              class="flex items-center gap-3 px-4 py-2.5 rounded-lg text-gray-500 
+                      hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 transition-colors">
+              <span class="material-symbols-outlined">warning</span>
+              <span class="text-sm font-medium">Suspicious Transfers</span>
+            </a>
+          </li>
+
+
+          <li>
             <a href="{{ route('admin.reviews.index') }}" class="flex items-center gap-3 px-4 py-2.5 rounded-lg text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 transition-colors">
               <span class="material-symbols-outlined">reviews</span>
               <span class="text-sm font-medium">Reviews</span>

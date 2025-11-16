@@ -42,6 +42,9 @@ public function index(Request $request)
     
     // Get supported currencies
     $currencies = CurrencyService::getSupportedCurrencies();
+    $admin = \App\Models\User::role('Admin')->first();
+    $walletFee = $admin->commission ?? 0;
+
 
     return view('user.dashboard', compact(
         'user', 
@@ -52,7 +55,8 @@ public function index(Request $request)
         'totalReviews',
         'selectedCurrency',
         'convertedBalance',
-        'currencies'
+        'currencies',
+        'walletFee'
     ));
 }
 

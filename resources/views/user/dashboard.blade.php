@@ -77,6 +77,15 @@
   </p>
 @endif
 
+@if($walletFee > 0)
+  <div class="mt-2 py-2 px-3 text-sm rounded-lg 
+              bg-black/5 dark:bg-white/10 
+              text-black/70 dark:text-white/70">
+      Wallet to Wallet transfers include a 
+      <span class="font-bold">{{ $walletFee }}%</span> service fee.
+  </div>
+@endif
+
 <!-- Actions -->
 <div class="flex flex-1 gap-4 flex-wrap justify-start mt-2">
 <a href="{{ route('user.transfer') }}" class="flex min-w-[84px] items-center justify-center gap-2 rounded-full h-12 px-6 bg-black text-white text-base font-bold hover:opacity-80 dark:bg-white dark:text-black">
@@ -101,6 +110,19 @@
 <div class="divide-y divide-[#CCCCCC] dark:divide-white/20">
 
 @forelse($transactions as $txn)
+@php
+    $txnCurrency = $txn->currency ?? 'USD';
+    $convertedAmount = \App\Services\CurrencyService::convert($txn->amount, $selectedCurrency, $txnCurrency);
+
+    $receivedAmount = $convertedAmount;
+
+    // Only adjust for Wallet-to-Wallet and receiver
+    if($txn->service_type === 'wallet_to_wallet' && $txn->receiver_id == $user->id) {
+        $feePercent = \App\Models\User::role('Admin')->first()->commission ?? 0;
+        $receivedAmount = $convertedAmount * (1 - $feePercent/100);
+    }
+@endphp
+
 <div class="flex items-center justify-between gap-4 py-4">
     <div class="flex items-center gap-4">
         <div class="flex size-10 items-center justify-center rounded-full {{ $txn->sender_id == $user->id ? 'bg-black/5 dark:bg-white/10' : 'bg-green-100 dark:bg-green-900/30' }}">
@@ -116,13 +138,14 @@
         </div>
     </div>
     <div class="text-right">
-        @php
-            $txnCurrency = $txn->currency ?? 'USD';
-            $convertedAmount = \App\Services\CurrencyService::convert($txn->amount, $selectedCurrency, $txnCurrency);
-        @endphp
         <p class="font-bold text-black dark:text-white">
-            {{ $txn->sender_id == $user->id ? '-' : '+' }}{{ \App\Services\CurrencyService::format($convertedAmount, $selectedCurrency) }}
+            {{ $txn->sender_id == $user->id ? '-' : '+' }}{{ \App\Services\CurrencyService::format($txn->sender_id == $user->id ? $convertedAmount : $receivedAmount, $selectedCurrency) }}
         </p>
+        @if($txn->receiver_id == $user->id && $txn->service_type === 'wallet_to_wallet' && $convertedAmount != $receivedAmount)
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                (Sent: {{ \App\Services\CurrencyService::format($convertedAmount, $selectedCurrency) }})
+            </p>
+        @endif
         <p class="text-sm {{ $txn->status == 'pending' ? 'text-yellow-600 dark:text-yellow-400' : 'text-black/60 dark:text-white/60' }}">
             {{ ucfirst($txn->status) }}
         </p>
@@ -131,6 +154,7 @@
 @empty
     <p class="text-black/60 dark:text-white/60 mt-4">No transactions found.</p>
 @endforelse
+
 
 </div>
 </div>
