@@ -68,6 +68,31 @@
               ];
           @endphp
 
+          {{-- Flash Messages --}}
+@if (session('success'))
+    <div class="mb-4 p-4 rounded bg-green-100 text-green-800 font-medium">
+        {{ session('success') }}
+    </div>
+@endif
+
+@if (session('error'))
+    <div class="mb-4 p-4 rounded bg-red-100 text-red-800 font-medium">
+        {{ session('error') }}
+    </div>
+@endif
+
+{{-- Validation Errors --}}
+@if ($errors->any())
+    <div class="mb-4 p-4 rounded bg-red-100 text-red-800 font-medium">
+        <ul class="list-disc list-inside">
+            @foreach ($errors->all() as $error)
+                <li>{{ $error }}</li>
+            @endforeach
+        </ul>
+    </div>
+@endif
+
+
           <table class="w-full text-sm text-left">
             <thead class="bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 uppercase text-xs font-semibold">
               <tr>
