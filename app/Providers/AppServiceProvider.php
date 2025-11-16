@@ -7,7 +7,7 @@ use Spatie\Permission\Models\Role;
 use Illuminate\Support\Facades\Artisan;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
-
+use Illuminate\Support\Facades\Schema; // <-- Add this
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -24,29 +24,31 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        if (Role::count() === 0) {
-        Artisan::call('db:seed', ['--class' => 'RoleSeeder']);
-    }
-    if (!User::where('email', 'admin123@gmail.com')->exists()) {
-        $admin = User::create([
-            'name' => 'Admin',
-            'email' => 'admin123@gmail.com',
-            'password' =>'admin123',
-            'status' => 'active',
-        ]);
+        // Only run if 'roles' table exists
+        if (Schema::hasTable('roles') && Role::count() === 0) {
+            Artisan::call('db:seed', ['--class' => 'RoleSeeder']);
+        }
 
-        $admin->assignRole('Admin');
-    }
+        // Only run if 'users' table exists
+        if (Schema::hasTable('users') && !User::where('email', 'admin123@gmail.com')->exists()) {
+            $admin = User::create([
+                'name' => 'Admin',
+                'email' => 'admin123@gmail.com',
+                'password' => bcrypt('admin123'), // <-- hash password
+                'status' => 'active',
+            ]);
 
-     if (DB::table('fake_bank_accounts')->count() === 0) {
+            $admin->assignRole('Admin');
+        }
+
+        // Only run if 'fake_bank_accounts' table exists
+        if (Schema::hasTable('fake_bank_accounts') && DB::table('fake_bank_accounts')->count() === 0) {
             Artisan::call('db:seed', ['--class' => 'FakeBankAccountsSeeder']);
         }
 
-        // 4️⃣ Seed fake cards if table is empty
-        if (DB::table('fake_cards')->count() === 0) {
+        // Only run if 'fake_cards' table exists
+        if (Schema::hasTable('fake_cards') && DB::table('fake_cards')->count() === 0) {
             Artisan::call('db:seed', ['--class' => 'FakeCardsSeeder']);
         }
-
     }
-
 }

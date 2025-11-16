@@ -31,6 +31,7 @@ class CurrencyService
     /**
      * Get exchange rate from USD to target currency
      * Uses exchangerate-api.io (free tier: 1500 requests/month)
+     * Always uses USD as base currency for reliability
      */
     public static function getExchangeRate(string $toCurrency, string $fromCurrency = 'USD'): float
     {
@@ -39,23 +40,52 @@ class CurrencyService
             return 1.0;
         }
 
-        // Cache key for the exchange rate
-        $cacheKey = "exchange_rate_{$fromCurrency}_{$toCurrency}";
+        // Always use USD as base currency for API calls (most reliable)
+        // If fromCurrency is not USD, we need to calculate the inverse rate
+        if ($fromCurrency !== 'USD') {
+            // Get rate from USD to fromCurrency, then invert
+            $usdToFromRate = self::getExchangeRate($fromCurrency, 'USD');
+            if ($usdToFromRate == 0 || $usdToFromRate == 1.0) {
+                // If rate is invalid, try direct conversion
+                return 1.0;
+            }
+            // Get rate from USD to toCurrency
+            $usdToToRate = self::getExchangeRate($toCurrency, 'USD');
+            // Calculate: (USD to toCurrency) / (USD to fromCurrency) = fromCurrency to toCurrency
+            return $usdToToRate / $usdToFromRate;
+        }
+
+        // Cache key for the exchange rate (always USD to target)
+        $cacheKey = "exchange_rate_USD_{$toCurrency}";
 
         // Try to get from cache first (cache for 1 hour)
         $cachedRate = Cache::get($cacheKey);
         if ($cachedRate !== null) {
-            return (float) $cachedRate;
+            // Validate cached rate - if it's 1.0 for a non-USD currency, it's likely invalid
+            if ($cachedRate == 1.0 && $toCurrency !== 'USD') {
+                \Log::warning("Invalid cached rate detected (1.0) for {$toCurrency}, clearing cache and fetching fresh rate.");
+                Cache::forget($cacheKey);
+            } else {
+                return (float) $cachedRate;
+            }
         }
 
         try {
-            // Using exchangerate-api.io free API
-            // You can also use: https://api.exchangerate-api.com/v4/latest/USD
-            $response = Http::timeout(5)->get("https://api.exchangerate-api.com/v4/latest/{$fromCurrency}");
+            // Using exchangerate-api.io free API - always use USD as base
+            $response = Http::timeout(5)->get("https://api.exchangerate-api.com/v4/latest/USD");
 
             if ($response->successful()) {
                 $data = $response->json();
-                $rate = $data['rates'][$toCurrency] ?? 1.0;
+                $rate = $data['rates'][$toCurrency] ?? null;
+
+                // If rate not found, try fallback rate
+                if ($rate === null || $rate == 0) {
+                    \Log::warning("Exchange rate not found in API for currency: {$toCurrency}, using fallback.");
+                    $rate = self::getFallbackRate($toCurrency);
+                    // Cache the fallback rate for shorter time (15 minutes) since it's approximate
+                    Cache::put($cacheKey, $rate, now()->addMinutes(15));
+                    return (float) $rate;
+                }
 
                 // Cache the rate for 1 hour
                 Cache::put($cacheKey, $rate, now()->addHour());
@@ -67,8 +97,12 @@ class CurrencyService
             \Log::warning("Currency conversion failed: " . $e->getMessage());
         }
 
-        // Fallback: return 1 if API fails (assume same currency)
-        return 1.0;
+        // Fallback: use fallback rate if API fails
+        \Log::warning("Exchange rate API failed, using fallback rate for {$toCurrency}");
+        $fallbackRate = self::getFallbackRate($toCurrency);
+        // Cache fallback rate for shorter time (15 minutes)
+        Cache::put($cacheKey, $fallbackRate, now()->addMinutes(15));
+        return $fallbackRate;
     }
 
     /**
@@ -76,8 +110,74 @@ class CurrencyService
      */
     public static function convert(float $amount, string $toCurrency, string $fromCurrency = 'USD'): float
     {
-        $rate = self::getExchangeRate($toCurrency, $fromCurrency);
-        return $amount * $rate;
+        // If same currency, return amount as is
+        if ($fromCurrency === $toCurrency) {
+            return $amount;
+        }
+
+        // Always use USD as intermediary for reliable conversion
+        // This ensures we always use USD as base currency (which the API supports)
+        
+        // If converting from USD, use direct rate
+        if ($fromCurrency === 'USD') {
+            $rate = self::getExchangeRate($toCurrency, 'USD');
+            return $amount * $rate;
+        }
+
+        // If converting to USD, get rate from USD to fromCurrency and divide
+        if ($toCurrency === 'USD') {
+            // Get how many units of fromCurrency = 1 USD
+            $rate = self::getExchangeRate($fromCurrency, 'USD');
+            
+            // Validate rate - if it's 1.0 for a non-USD currency, the API likely failed
+            if ($rate == 1.0 && $fromCurrency !== 'USD') {
+                \Log::warning("Invalid exchange rate detected: 1.0 for {$fromCurrency}. This indicates API failure.");
+                // Try to clear cache and retry once
+                Cache::forget("exchange_rate_USD_{$fromCurrency}");
+                $rate = self::getExchangeRate($fromCurrency, 'USD');
+                
+                // If still 1.0, use fallback rates for common currencies
+                if ($rate == 1.0) {
+                    \Log::warning("Exchange rate API does not support {$fromCurrency} or is unavailable. Using fallback rate.");
+                    $rate = self::getFallbackRate($fromCurrency);
+                }
+            }
+            
+            // Convert: amount / rate = USD equivalent
+            return $amount / $rate;
+        }
+
+        // For conversions between two non-USD currencies, convert via USD
+        // First convert fromCurrency to USD
+        $usdAmount = self::convert($amount, 'USD', $fromCurrency);
+        // Then convert USD to toCurrency
+        return self::convert($usdAmount, $toCurrency, 'USD');
+    }
+
+    /**
+     * Get fallback exchange rate when API fails
+     * These are approximate rates and should be updated regularly
+     */
+    private static function getFallbackRate(string $currency): float
+    {
+        // Approximate rates: how many units of currency = 1 USD
+        $fallbackRates = [
+            'LBP' => 15000.0,  // Lebanese Pound (approximate, very volatile)
+            'EUR' => 0.92,
+            'GBP' => 0.79,
+            'JPY' => 150.0,
+            'AUD' => 1.52,
+            'CAD' => 1.35,
+            'CHF' => 0.88,
+            'CNY' => 7.2,
+            'INR' => 83.0,
+            'AED' => 3.67,
+            'SAR' => 3.75,
+        ];
+
+        $rate = $fallbackRates[$currency] ?? 1.0;
+        \Log::warning("Using fallback exchange rate for {$currency}: {$rate}");
+        return $rate;
     }
 
     /**
@@ -106,4 +206,3 @@ class CurrencyService
         return $symbol . number_format($amount, $decimals);
     }
 }
-

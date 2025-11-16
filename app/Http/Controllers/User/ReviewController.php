@@ -53,7 +53,7 @@ class ReviewController extends Controller
         $existingReview = Review::where('user_id', $user->id)->first();
 
         if ($existingReview) {
-            // Update existing review and reset approval
+            // Update existing review and reset approval status
             $existingReview->fill([
                 'rating' => $request->rating,
                 'comment' => $request->comment,
