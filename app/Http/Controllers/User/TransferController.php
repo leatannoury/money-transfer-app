@@ -217,7 +217,7 @@ class TransferController extends Controller
                 'payment_method' => $request->payment_method,
             ]);
 
-            if ($transaction->agent_id) {
+             if ($transaction->agent_id) {
                 AgentNotification::create([
                     'agent_id' => $transaction->agent_id,
                     'transaction_id' => $transaction->id,
@@ -230,7 +230,7 @@ class TransferController extends Controller
                 ? 'Your transfer request has been sent to the selected agent.'
                 : 'Your transfer request has been sent. An agent will be assigned soon.';
 
-            return redirect()->route('user.transactions')->with('success', $message);
-        }
+        return redirect()->route('user.transactions')->with('success', $message);
     }
+}
 }
