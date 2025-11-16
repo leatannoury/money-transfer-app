@@ -55,6 +55,7 @@ class TransferController extends Controller
         $request->validate([
             'search_type' => 'required|in:email,phone',
             'amount' => 'required|numeric|min:1',
+            'currency' => 'nullable|string|in:' . implode(',', array_keys($currencies)),
             'email' => 'nullable|email',
             'phone' => 'nullable|string',
             'service_type' => 'required|in:wallet_to_wallet,transfer_via_agent',
@@ -65,10 +66,30 @@ class TransferController extends Controller
         ]);
 
         $sender = Auth::user();
-        $amount = $request->amount;
+        // Refresh sender to get latest balance from database
+        $sender->refresh();
+        
+        $amount = (float) $request->amount;
         $serviceType = $request->service_type;
         $transactionCurrency = $request->currency ?? $selectedCurrency;
-        $amountInUsd = round(CurrencyService::convert($amount, 'USD', $transactionCurrency), 2);
+        
+        // Convert amount from transaction currency to USD
+        // If transaction currency is already USD, no conversion needed
+        if ($transactionCurrency === 'USD') {
+            $amountInUsd = $amount;
+        } else {
+            $amountInUsd = round(CurrencyService::convert($amount, 'USD', $transactionCurrency), 2);
+            
+            // Validate conversion result - if it's suspiciously large, the conversion might have failed
+            // (e.g., if API fails and defaults to 1.0, 20000 LBP would become 20000 USD)
+            // Check if converted amount is more than 100x the original (indicates likely conversion error)
+            if ($amountInUsd > ($amount * 100) && $amount > 100) {
+                \Log::warning("Suspicious currency conversion: {$amount} {$transactionCurrency} = {$amountInUsd} USD");
+                return back()->withInput()->withErrors([
+                    'amount' => "Currency conversion failed. Please try again or contact support."
+                ]);
+            }
+        }
 
         // Agent validation
         if ($serviceType === 'transfer_via_agent') {
@@ -97,25 +118,34 @@ class TransferController extends Controller
             $request->validate(['card_id' => 'required|exists:payment_methods,id']);
             $paymentMethod = PaymentMethod::findOrFail($request->card_id);
             $card = FakeCard::where('card_number', 'like', '%'.$paymentMethod->last4)->firstOrFail();
-            if ($card->balance < $amount) {
+            // Convert amount to USD for card balance check (assuming card balance is in USD)
+            $cardBalanceInUsd = $card->balance;
+            if ($cardBalanceInUsd < $amountInUsd) {
                 return back()->withInput()->withErrors([
-                    'amount' => "Insufficient balance on selected credit card. Available: {$card->balance}"
+                    'amount' => "Insufficient balance on selected credit card. Available: {$card->balance} USD"
                 ]);
             }
         } elseif ($request->payment_method === 'bank_account') {
             $request->validate(['bank_id' => 'required|exists:payment_methods,id']);
             $paymentMethod = PaymentMethod::findOrFail($request->bank_id);
             $bank = FakeBankAccount::where('account_number', 'like', '%'.$paymentMethod->last4)->firstOrFail();
-            if ($bank->balance < $amount) {
+            // Convert amount to USD for bank balance check (assuming bank balance is in USD)
+            $bankBalanceInUsd = $bank->balance;
+            if ($bankBalanceInUsd < $amountInUsd) {
                 return back()->withInput()->withErrors([
-                    'amount' => "Insufficient balance in selected bank account. Available: {$bank->balance}"
+                    'amount' => "Insufficient balance in selected bank account. Available: {$bank->balance} USD"
                 ]);
             }
         } else {
-            // Wallet
-            if ($sender->balance < $amount) {
+            // Wallet - balance is stored in USD, so compare with amountInUsd
+            // Ensure balance is cast to float for proper comparison (default to 0 if null)
+            $senderBalance = (float) ($sender->balance ?? 0);
+            
+            if ($senderBalance < $amountInUsd) {
+                $amountInSelectedCurrency = CurrencyService::format($amount, $transactionCurrency);
+                $balanceInSelectedCurrency = CurrencyService::format(CurrencyService::convert($senderBalance, $transactionCurrency, 'USD'), $transactionCurrency);
                 return back()->withInput()->withErrors([
-                    'amount' => "Insufficient wallet balance. Available: {$sender->balance}"
+                    'amount' => "Insufficient wallet balance. You tried to send {$amountInSelectedCurrency} (≈ {$amountInUsd} USD), but you only have {$balanceInSelectedCurrency} (or {$senderBalance} USD) available."
                 ]);
             }
         }
@@ -123,17 +153,21 @@ class TransferController extends Controller
         // Process wallet or payment methods
         if ($serviceType === 'wallet_to_wallet') {
             if ($request->payment_method === 'wallet') {
-                $sender->balance -= $amount;
+                // Deduct in USD since balance is stored in USD
+                $sender->balance -= $amountInUsd;
             } elseif ($request->payment_method === 'credit_card') {
-                $card->balance -= $amount;
+                // Deduct in USD since card balance is stored in USD
+                $card->balance -= $amountInUsd;
                 $card->save();
             } elseif ($request->payment_method === 'bank_account') {
-                $bank->balance -= $amount;
+                // Deduct in USD since bank balance is stored in USD
+                $bank->balance -= $amountInUsd;
                 $bank->save();
             }
 
             $sender->save();
-            $receiver->balance += $amount;
+            // Add in USD since receiver balance is stored in USD
+            $receiver->balance += $amountInUsd;
             $receiver->save();
 
             Transaction::create([

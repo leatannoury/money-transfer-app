@@ -150,18 +150,18 @@
                   <span class="material-symbols-outlined text-sm">rate_review</span>
                   <span>{{ $userReview ? 'Update Review' : 'Submit Review' }}</span>
                 </button>
-                
-                @if($userReview)
-                  <form action="{{ route('user.reviews.destroy') }}" method="POST" class="inline">
-                    @csrf
-                    @method('DELETE')
-                    <button type="submit" class="text-sm text-red-600 dark:text-red-400 hover:underline" onclick="return confirm('Are you sure you want to delete your review?')">
-                      Delete Review
-                    </button>
-                  </form>
-                @endif
               </div>
             </form>
+            
+            @if($userReview)
+              <form action="{{ route('user.reviews.destroy') }}" method="POST" class="mt-3">
+                @csrf
+                @method('DELETE')
+                <button type="submit" class="text-sm text-red-600 dark:text-red-400 hover:underline" onclick="return confirm('Are you sure you want to delete your review?')">
+                  Delete Review
+                </button>
+              </form>
+            @endif
           </div>
 
           <!-- All Reviews -->
