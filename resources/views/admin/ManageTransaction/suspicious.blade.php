@@ -61,7 +61,7 @@
         <div class="overflow-hidden rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
           @php
               $statusColors = [
-                  'suspicious' => 'text-orange-600 bg-orange-100',
+                  'suspicious' => 'text-orange-700 bg-orange-100',
                   'completed' => 'text-green-600 bg-green-100',
                   'failed' => 'text-red-600 bg-red-100',
                   'pending' => 'text-yellow-600 bg-yellow-100',
