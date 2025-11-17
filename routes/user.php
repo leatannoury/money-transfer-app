@@ -10,6 +10,8 @@ use App\Http\Controllers\User\AgentsMapController;
 use App\Http\Controllers\User\ReviewController;
 use App\Http\Controllers\User\SettingsController;
 use App\Http\Controllers\User\PaymentMethodController;
+use App\Http\Controllers\User\SupportChatController;
+
 // All user routes will share these middlewares
 Route::middleware(['auth','check.banned','role:User'])->prefix('user')->name('user.')->group(function () {
 
@@ -45,4 +47,12 @@ Route::put('/payment-methods/{method}/primary', [PaymentMethodController::class,
     Route::post('/settings/request-agent', [SettingsController::class, 'requestAgentStatus'])->name('settings.request-agent');
     Route::post('/settings/cancel-agent-request', [SettingsController::class, 'cancelAgentRequest'])->name('settings.cancel-agent-request');
     Route::resource('payment-methods', PaymentMethodController::class);
+
+
+
+ Route::get('/support/chat', [SupportChatController::class, 'index'])
+        ->name('chat.index');
+
+    Route::post('/support/chat/send', [SupportChatController::class, 'sendMessage'])
+        ->name('chat.send');
 });
