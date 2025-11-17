@@ -29,6 +29,11 @@ Route::post('/users/{id}/update', [ManageUserController::class, 'updateUser'])->
   Route::post('/agents/store', [ManageAgentController::class, 'storeAgent'])->name('agents.store');
   Route::get('/agents/{id}/edit', [ManageAgentController::class, 'editAgentForm'])->name('agents.edit');
 Route::post('/agents/{id}/update', [ManageAgentController::class, 'updateAgent'])->name('agents.update');
+  
+  // Agent Requests
+  Route::get('/agents/requests', [ManageAgentController::class, 'agentRequests'])->name('agents.requests');
+  Route::post('/agents/requests/{id}/approve', [ManageAgentController::class, 'approveAgentRequest'])->name('agents.requests.approve');
+  Route::post('/agents/requests/{id}/reject', [ManageAgentController::class, 'rejectAgentRequest'])->name('agents.requests.reject');
 
 
 Route::get('/manageTransactions',[ManageTransactionController::class,'manageTransaction'])->name("transactions");

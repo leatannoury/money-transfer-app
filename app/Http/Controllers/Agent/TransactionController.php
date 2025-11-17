@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Transaction;
 use Illuminate\Support\Facades\Log;
+use App\Services\CurrencyService;
 
 class TransactionController extends Controller
 {
@@ -70,19 +71,36 @@ class TransactionController extends Controller
         $sender   = User::find($transaction->sender_id);
         $receiver = User::find($transaction->receiver_id);
 
+        // ✅ Convert transaction amount from transaction currency to USD
+        // All balances are stored in USD, so we need to convert first
+        $transactionCurrency = $transaction->currency ?? 'USD';
+        if ($transactionCurrency === 'USD') {
+            $amountInUsd = $transaction->amount;
+        } else {
+            $amountInUsd = round(CurrencyService::convert($transaction->amount, 'USD', $transactionCurrency), 2);
+            
+            // Validate conversion result - if it's suspiciously large, the conversion might have failed
+            // (e.g., if API fails and defaults to 1.0, 20000 LBP would become 20000 USD)
+            // Check if converted amount is more than 100x the original (indicates likely conversion error)
+            if ($amountInUsd > ($transaction->amount * 100) && $transaction->amount > 100) {
+                \Log::warning("Suspicious currency conversion: {$transaction->amount} {$transactionCurrency} = {$amountInUsd} USD");
+                return back()->with('error', "Currency conversion failed. Please try again or contact support.");
+            }
+        }
+
         // ✅ agent commission rate (e.g., 10%)
         $commissionRate   = $agent->commission; // assuming it's stored as 10 for 10%
-        $commissionAmount = ($transaction->amount * $commissionRate) / 100;
+        $commissionAmount = ($amountInUsd * $commissionRate) / 100;
 
         // ✅ receiver gets the rest
-        $receiverAmount = $transaction->amount - $commissionAmount;
+        $receiverAmount = $amountInUsd - $commissionAmount;
 
-        // ✅ update balances
-        if ($sender->balance < $transaction->amount) {
+        // ✅ update balances (all in USD)
+        if ($sender->balance < $amountInUsd) {
             return back()->with('error', 'Sender does not have enough balance.');
         }
 
-        $sender->balance   -= $transaction->amount;
+        $sender->balance   -= $amountInUsd;
         $receiver->balance += $receiverAmount;
         $agent->balance    += $commissionAmount;
 

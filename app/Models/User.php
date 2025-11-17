@@ -31,6 +31,7 @@ class User extends Authenticatable
         'work_start_time',
         'work_end_time',
         'timezone',
+        'agent_request_status',
     ];
 
     /**
