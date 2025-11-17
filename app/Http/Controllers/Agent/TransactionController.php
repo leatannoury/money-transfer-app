@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Models\Transaction;
 use Illuminate\Support\Facades\Log;
 use App\Services\CurrencyService;
+use App\Services\NotificationService;
 
 class TransactionController extends Controller
 {
@@ -113,6 +114,8 @@ class TransactionController extends Controller
         $agent->save();
         $transaction->save();
 
+        NotificationService::transferCompleted($transaction);
+
         return back()->with('success', 'Transaction completed successfully. Commission credited.');
     }
 
@@ -124,6 +127,8 @@ class TransactionController extends Controller
         if ($transaction->status == 'in_progress') {
             $transaction->status = 'failed'; // ✅ add quotes
             $transaction->save();
+
+            NotificationService::transferFailed($transaction, 'An agent rejected the transfer request.');
         }
 
         return redirect()->back()->with('success', 'Transaction rejected successfully.');

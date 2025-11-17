@@ -13,6 +13,7 @@ use App\Models\AgentNotification;
 use App\Models\PaymentMethod;
 use App\Models\FakeCard;
 use App\Models\FakeBankAccount;
+use App\Services\NotificationService;
 
 class TransferController extends Controller
 {
@@ -186,7 +187,7 @@ class TransferController extends Controller
             }
 
             // Create transaction record
-            Transaction::create([
+            $transaction = Transaction::create([
                 'sender_id' => $sender->id,
                 'receiver_id' => $receiver->id,
                 'amount' => $amount,
@@ -201,6 +202,14 @@ class TransferController extends Controller
             $message = $transactionStatus === 'suspicious'
                 ? 'Transaction flagged as suspicious and awaiting admin approval.'
                 : 'Money sent successfully!';
+
+            NotificationService::transferInitiated($transaction);
+
+            if ($transactionStatus === 'suspicious') {
+                NotificationService::transferPendingReview($transaction);
+            } else {
+                NotificationService::transferCompleted($transaction);
+            }
 
             return redirect()->route('user.transactions')->with('success', $message);
         } else {
@@ -230,7 +239,9 @@ class TransferController extends Controller
                 ? 'Your transfer request has been sent to the selected agent.'
                 : 'Your transfer request has been sent. An agent will be assigned soon.';
 
-        return redirect()->route('user.transactions')->with('success', $message);
+            NotificationService::transferInitiated($transaction);
+
+            return redirect()->route('user.transactions')->with('success', $message);
+        }
     }
-}
 }

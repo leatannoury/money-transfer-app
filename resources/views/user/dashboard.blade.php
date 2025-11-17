@@ -37,8 +37,46 @@
 <header class="flex h-20 items-center justify-end border-b border-[#CCCCCC] px-8 dark:border-white/20">
 <div class="flex items-center gap-6">
 <div class="relative">
-<span class="material-symbols-outlined text-black dark:text-white text-2xl cursor-pointer">notifications</span>
-<div class="absolute -top-1 -right-1 size-2 rounded-full bg-black dark:bg-white"></div>
+  <button type="button" id="userNotifButton" class="relative flex items-center justify-center w-10 h-10 rounded-full hover:bg-black/5 dark:hover:bg-white/10">
+    <span class="material-symbols-outlined text-black dark:text-white text-2xl cursor-pointer">notifications</span>
+    @if(($unreadNotifications ?? 0) > 0)
+      <span id="userNotifDot" class="absolute top-2 right-2 inline-flex h-2 w-2 rounded-full bg-red-500"></span>
+    @endif
+  </button>
+
+  <div id="userNotifDropdown" class="hidden absolute right-0 mt-2 w-80 bg-white dark:bg-gray-900 border border-[#CCCCCC] dark:border-white/10 rounded-xl shadow-2xl z-50">
+    <div class="px-4 py-3 border-b border-[#CCCCCC] dark:border-white/10 flex items-center justify-between">
+      <div>
+        <p class="text-sm font-semibold text-black dark:text-white">Notifications</p>
+        <p id="userNotifUnreadText" class="text-xs text-black/60 dark:text-white/60">{{ $unreadNotifications ?? 0 }} unread</p>
+      </div>
+      <button id="userNotifClear" type="button" class="text-xs font-semibold text-black dark:text-white hover:underline disabled:opacity-40" {{ ($unreadNotifications ?? 0) === 0 ? 'disabled' : '' }}>
+        Clear
+      </button>
+    </div>
+
+    @if(isset($notifications) && $notifications->isNotEmpty())
+      <ul class="max-h-80 overflow-y-auto divide-y divide-[#EEEEEE] dark:divide-white/5">
+        @foreach($notifications as $notification)
+          <li class="px-4 py-3 {{ !$notification->is_read ? 'bg-black/5 dark:bg-white/5' : '' }}">
+            <div class="flex items-start justify-between gap-3">
+              <div>
+                <p class="text-sm font-semibold text-black dark:text-white">{{ $notification->title }}</p>
+                @if($notification->message)
+                  <p class="text-xs text-black/60 dark:text-white/70 mt-1">{{ $notification->message }}</p>
+                @endif
+              </div>
+              <span class="text-[10px] text-black/50 dark:text-white/50 whitespace-nowrap">{{ $notification->created_at?->diffForHumans() }}</span>
+            </div>
+          </li>
+        @endforeach
+      </ul>
+    @else
+      <div class="p-4 text-sm text-black/60 dark:text-white/60">
+        No notifications yet.
+      </div>
+    @endif
+  </div>
 </div>
 </div>
 </header>
@@ -316,6 +354,61 @@
 </div>
 
 <script>
+  const csrfTokenMeta = document.querySelector('meta[name="csrf-token"]');
+  const csrfToken = csrfTokenMeta ? csrfTokenMeta.getAttribute('content') : null;
+
+  const userNotifButton = document.getElementById('userNotifButton');
+  const userNotifDropdown = document.getElementById('userNotifDropdown');
+  const userNotifClearBtn = document.getElementById('userNotifClear');
+  const userNotifUnreadText = document.getElementById('userNotifUnreadText');
+  const userNotifDot = document.getElementById('userNotifDot');
+  const userNotifRoute = "{{ route('user.notifications.read') }}";
+
+  if (userNotifButton && userNotifDropdown) {
+    userNotifButton.addEventListener('click', (event) => {
+      event.stopPropagation();
+      userNotifDropdown.classList.toggle('hidden');
+    });
+
+    document.addEventListener('click', (event) => {
+      if (
+        !userNotifDropdown.contains(event.target) &&
+        !userNotifButton.contains(event.target)
+      ) {
+        userNotifDropdown.classList.add('hidden');
+      }
+    });
+  }
+
+  if (userNotifClearBtn) {
+    userNotifClearBtn.addEventListener('click', () => {
+      if (!csrfToken || userNotifClearBtn.disabled) {
+        return;
+      }
+
+      userNotifClearBtn.disabled = true;
+
+      fetch(userNotifRoute, {
+        method: 'POST',
+        headers: {
+          'X-CSRF-TOKEN': csrfToken,
+          'Accept': 'application/json',
+        },
+      })
+        .then(() => {
+          if (userNotifUnreadText) {
+            userNotifUnreadText.textContent = '0 unread';
+          }
+          if (userNotifDot) {
+            userNotifDot.remove();
+          }
+        })
+        .catch(() => {
+          userNotifClearBtn.disabled = false;
+        });
+    });
+  }
+
   // Star rating interaction
   const starButtons = document.querySelectorAll('.star-btn');
   const ratingInput = document.getElementById('rating-input');

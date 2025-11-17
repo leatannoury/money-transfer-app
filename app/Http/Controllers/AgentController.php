@@ -10,6 +10,18 @@ use Illuminate\Support\Facades\Log;
 
 class AgentController extends Controller
 {
+    public function markNotificationsRead()
+    {
+        /** @var \App\Models\User $agent */
+        $agent = Auth::user();
+
+        $agent->agentNotifications()
+            ->where('is_read', false)
+            ->update(['is_read' => true]);
+
+        return response()->json(['message' => 'Notifications marked as read.']);
+    }
+
     /**
      * Display the agent's dashboard (own profile only)
      */
