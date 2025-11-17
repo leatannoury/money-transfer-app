@@ -169,11 +169,7 @@ public function cashIn(Request $request)
     $amount     = $request->amount;
     $commission = $amount * 0.005; // 0.5%
 
-    if ($user->balance < $commission) {
-        return back()->withErrors([
-            'amount' => 'User does not have enough balance to pay the commission.',
-        ])->withInput();
-    }
+ 
 
     // Update balances
     $user->balance  = $user->balance - $commission + $amount;
