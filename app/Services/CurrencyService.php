@@ -139,4 +139,27 @@ class CurrencyService
 
         return $symbol . number_format($amount, $decimals);
     }
+
+    /**
+     * Fallback exchange rates (approximate USD base)
+     */
+    protected static function getFallbackRate(string $currency): float
+    {
+        $fallbackRates = [
+            'USD' => 1.0,
+            'EUR' => 0.92,
+            'GBP' => 0.78,
+            'JPY' => 147.0,
+            'AUD' => 1.45,
+            'CAD' => 1.35,
+            'CHF' => 0.86,
+            'CNY' => 7.25,
+            'INR' => 83.0,
+            'AED' => 3.67,
+            'SAR' => 3.75,
+            'LBP' => 89500.0,
+        ];
+
+        return $fallbackRates[strtoupper($currency)] ?? 1.0;
+    }
 }

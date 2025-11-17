@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\ManageTransactionController;
 use App\Http\Controllers\Admin\ReviewManagementController;
 use App\Http\Controllers\Admin\FeesController;
 use App\Http\Controllers\Admin\SuspiciousController;
+use App\Http\Controllers\Admin\AdminNotificationController;
 
 Route::middleware(['auth','check.banned','role:Admin'])->prefix('admin')->name('admin.')->group(function () {
   Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
@@ -48,4 +49,7 @@ Route::post('/fees/update', [FeesController::class, 'update'])->name('fees.updat
 Route::get('/transactions/suspicious', [ManageTransactionController::class, 'suspiciousTransactions'])->name('transactions.suspicious');
     Route::post('/transactions/{id}/accept', [SuspiciousController::class, 'acceptSuspicious'])->name('transactions.accept');
     Route::post('/transactions/{id}/reject', [SuspiciousController::class, 'rejectSuspicious'])->name('transactions.reject');
+
+    Route::delete('/notifications', [AdminNotificationController::class, 'clear'])
+        ->name('notifications.clear');
 });

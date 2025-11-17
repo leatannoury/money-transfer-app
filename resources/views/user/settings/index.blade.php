@@ -1,3 +1,4 @@
+
 @extends('layouts.app', ['noNav' => true])
 
 @section('content')
@@ -36,13 +37,7 @@
   <main class="flex-1 p-8 overflow-y-auto">
     <header class="flex justify-between items-center mb-10">
       <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Settings</h1>
-      <div class="flex items-center gap-4">
-        <button class="relative text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
-          <span class="material-symbols-outlined">notifications</span>
-          <span class="absolute top-0 right-0 w-2 h-2 bg-primary rounded-full"></span>
-        </button>
-
-      </div>
+      @include('components.user-notification-center')
     </header>
 
     @if(session('success'))

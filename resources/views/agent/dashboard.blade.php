@@ -72,14 +72,22 @@
            class="hidden absolute right-0 mt-2 w-80 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg z-50"
            data-read="0">
         <div class="px-4 py-2 border-b border-gray-200 dark:border-gray-800 flex justify-between items-center">
-          <span class="text-sm font-semibold text-gray-800 dark:text-gray-100">Notifications</span>
-          <span id="notifUnreadText" class="text-xs text-gray-500 dark:text-gray-400">
-            {{ isset($unreadCount) ? $unreadCount : 0 }} unread
-          </span>
+          <div>
+            <span class="text-sm font-semibold text-gray-800 dark:text-gray-100">Notifications</span>
+            <span id="notifUnreadText" class="block text-xs text-gray-500 dark:text-gray-400">
+              {{ isset($unreadCount) ? $unreadCount : 0 }} unread
+            </span>
+          </div>
+          <button id="notifClearButton"
+                  type="button"
+                  class="text-xs font-semibold text-gray-700 dark:text-gray-200 hover:underline disabled:opacity-40"
+                  {{ (isset($notifications) && $notifications->count()) ? '' : 'disabled' }}>
+            Clear
+          </button>
         </div>
 
         @if(isset($notifications) && $notifications->count())
-          <ul class="max-h-80 overflow-y-auto">
+          <ul class="max-h-80 overflow-y-auto" id="notifList">
             @foreach($notifications as $n)
               <li class="border-b border-gray-100 dark:border-gray-800 last:border-0">
                 <a href="{{ route('agent.transactions') }}"
@@ -99,8 +107,12 @@
               </li>
             @endforeach
           </ul>
+          <div id="notifEmptyState" class="hidden p-4 text-sm text-gray-500 dark:text-gray-400">
+            No notifications.
+          </div>
         @else
-          <div class="p-4 text-sm text-gray-500 dark:text-gray-400">
+          <ul id="notifList" class="hidden"></ul>
+          <div id="notifEmptyState" class="p-4 text-sm text-gray-500 dark:text-gray-400">
             No notifications.
           </div>
         @endif
@@ -315,7 +327,12 @@
   const notifUnreadText  = document.getElementById('notifUnreadText');
   const unreadCountInit  = {{ isset($unreadCount) ? (int) $unreadCount : 0 }};
   const markReadUrl      = "{{ route('agent.notifications.read') }}";
-  const csrfToken        = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+  const clearUrl         = "{{ route('agent.notifications.clear') }}";
+  const notifClearButton = document.getElementById('notifClearButton');
+  const notifList        = document.getElementById('notifList');
+  const notifEmptyState  = document.getElementById('notifEmptyState');
+  const csrfMeta         = document.querySelector('meta[name=\"csrf-token\"]');
+  const csrfToken        = csrfMeta ? csrfMeta.getAttribute('content') : null;
 
   if (notifButton && notifDropdown) {
     notifButton.addEventListener('click', () => {
@@ -324,7 +341,8 @@
       // First time opening: mark notifications as read
       if (!notifDropdown.classList.contains('hidden') &&
           unreadCountInit > 0 &&
-          notifDropdown.dataset.read === '0') {
+          notifDropdown.dataset.read === '0' &&
+          csrfToken) {
 
         fetch(markReadUrl, {
           method: 'POST',
@@ -350,6 +368,40 @@
       if (!notifButton.contains(e.target) && !notifDropdown.contains(e.target)) {
         notifDropdown.classList.add('hidden');
       }
+    });
+  }
+
+  if (notifClearButton && clearUrl && csrfToken) {
+    notifClearButton.addEventListener('click', () => {
+      if (notifClearButton.disabled) {
+        return;
+      }
+
+      notifClearButton.disabled = true;
+
+      fetch(clearUrl, {
+        method: 'DELETE',
+        headers: {
+          'X-CSRF-TOKEN': csrfToken,
+          'Accept': 'application/json'
+        },
+      }).then(() => {
+        if (notifUnreadText) {
+          notifUnreadText.textContent = '0 unread';
+        }
+        if (notifDot) {
+          notifDot.remove();
+        }
+        if (notifList) {
+          notifList.innerHTML = '';
+          notifList.classList.add('hidden');
+        }
+        if (notifEmptyState) {
+          notifEmptyState.classList.remove('hidden');
+        }
+      }).catch(() => {
+        notifClearButton.disabled = false;
+      });
     });
   }
 </script>

@@ -22,6 +22,19 @@ class AgentController extends Controller
         return response()->json(['message' => 'Notifications marked as read.']);
     }
 
+    public function clearNotifications()
+    {
+        /** @var \App\Models\User $agent */
+        $agent = Auth::user();
+
+        $agent->agentNotifications()->delete();
+
+        return response()->json([
+            'message' => 'Notifications cleared.',
+            'remaining' => 0,
+        ]);
+    }
+
     /**
      * Display the agent's dashboard (own profile only)
      */

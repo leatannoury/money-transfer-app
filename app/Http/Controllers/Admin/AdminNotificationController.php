@@ -1,23 +1,23 @@
 <?php
 
-namespace App\Http\Controllers\User;
+namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 
-class UserNotificationController extends Controller
+class AdminNotificationController extends Controller
 {
     public function clear(Request $request): JsonResponse|Response
     {
-        $user = $request->user();
+        $admin = $request->user();
 
-        if (!$user) {
+        if (!$admin) {
             return response()->json(['message' => 'Unauthenticated'], 401);
         }
 
-        $user->userNotifications()->delete();
+        $admin->userNotifications()->delete();
 
         return response()->json([
             'message' => 'Notifications cleared.',
@@ -25,4 +25,6 @@ class UserNotificationController extends Controller
         ]);
     }
 }
+
+
 

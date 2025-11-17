@@ -62,8 +62,9 @@
 <!-- Main Content -->
 <main class="flex-1 flex flex-col">
 <!-- TopNavBar -->
-<header class="flex items-center justify-center border-b border-border-light dark:border-border-dark px-8 py-4 bg-card-light dark:bg-card-dark">
+<header class="flex items-center justify-between border-b border-border-light dark:border-border-dark px-8 py-4 bg-card-light dark:bg-card-dark">
   <h2 class="text-text-light dark:text-text-dark text-xl font-bold">Dashboard</h2>
+  @include('components.admin-notification-center')
 </header>
 <div class="flex-1 p-8 overflow-y-auto">
 <!-- Stats -->

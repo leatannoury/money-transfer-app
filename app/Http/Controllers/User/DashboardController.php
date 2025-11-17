@@ -45,15 +45,6 @@ public function index(Request $request)
     $admin = \App\Models\User::role('Admin')->first();
     $walletFee = $admin->commission ?? 0;
 
-    $notifications = $user->userNotifications()
-        ->latest()
-        ->take(10)
-        ->get();
-
-    $unreadNotifications = $user->userNotifications()
-        ->where('is_read', false)
-        ->count();
-
     return view('user.dashboard', compact(
         'user', 
         'transactions', 
@@ -64,9 +55,7 @@ public function index(Request $request)
         'selectedCurrency',
         'convertedBalance',
         'currencies',
-        'walletFee',
-        'notifications',
-        'unreadNotifications'
+        'walletFee'
     ));
 }
 

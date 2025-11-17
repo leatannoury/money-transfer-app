@@ -47,6 +47,6 @@ Route::put('/payment-methods/{method}/primary', [PaymentMethodController::class,
     Route::post('/settings/cancel-agent-request', [SettingsController::class, 'cancelAgentRequest'])->name('settings.cancel-agent-request');
     Route::resource('payment-methods', PaymentMethodController::class);
 
-    Route::post('/notifications/read-all', [UserNotificationController::class, 'markAllRead'])
-        ->name('notifications.read');
+    Route::delete('/notifications', [UserNotificationController::class, 'clear'])
+        ->name('notifications.clear');
 });

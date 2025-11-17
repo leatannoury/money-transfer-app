@@ -4,8 +4,10 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Beneficiary;
 use App\Models\User;
 use Illuminate\Http\Request;
+use App\Services\NotificationService;
 
 
 class ManageAgentController extends Controller
@@ -191,6 +193,14 @@ public function approveAgentRequest($id, Request $request)
     $user->status = 'active';
     $user->save();
 
+    // Remove this user from any beneficiary lists (they are no longer a regular user)
+    Beneficiary::where('beneficiary_user_id', $user->id)->delete();
+
+    NotificationService::notifyAdmins(
+        'Agent Request Approved',
+        "{$user->name}'s agent request has been approved."
+    );
+
     return redirect()->route('admin.agents.requests')->with('success', "{$user->name}'s agent request has been approved.");
 }
 
@@ -209,6 +219,11 @@ public function rejectAgentRequest($id)
     // Update request status
     $user->agent_request_status = 'rejected';
     $user->save();
+
+    NotificationService::notifyAdmins(
+        'Agent Request Rejected',
+        "{$user->name}'s agent request has been rejected."
+    );
 
     return redirect()->route('admin.agents.requests')->with('success', "{$user->name}'s agent request has been rejected.");
 }

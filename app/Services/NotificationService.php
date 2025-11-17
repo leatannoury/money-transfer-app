@@ -115,12 +115,38 @@ class NotificationService
                 $transaction
             );
         }
+
+        self::notifyAdmins(
+            'Suspicious Transaction Pending',
+            sprintf(
+                'Transaction #%d (%s → %s) requires review.',
+                $transaction->id,
+                $transaction->sender?->name ?? 'Unknown',
+                $transaction->receiver?->name ?? 'Unknown'
+            ),
+            $transaction
+        );
     }
 
     protected static function formatAmount(Transaction $transaction): string
     {
         $currency = $transaction->currency ?? 'USD';
         return CurrencyService::format($transaction->amount, $currency);
+    }
+
+    public static function notifyAdmins(string $title, string $message, ?Transaction $transaction = null): void
+    {
+        $admins = User::role('Admin')->get();
+
+        foreach ($admins as $admin) {
+            self::sendUserNotification(
+                $admin,
+                'admin_alert',
+                $title,
+                $message,
+                $transaction
+            );
+        }
     }
 }
 

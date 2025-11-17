@@ -20,7 +20,7 @@ public function index(Request $request)
     $query = Transaction::where(function($q) {
         $q->where('sender_id', Auth::id())
           ->orWhere('receiver_id', Auth::id());
-    })->with(['sender', 'receiver']);
+    })->with(['sender.roles', 'receiver.roles']);
 
     // Filters
     if ($request->filled('type')) {
