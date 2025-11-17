@@ -149,34 +149,35 @@ class TransactionController extends Controller
 public function cashIn(Request $request)
 {
     $request->validate([
-        'search_type' => 'required|in:email,phone',
-        'email'       => 'nullable|email',
-        'phone'       => 'nullable|string',
-        'amount'      => 'required|numeric|min:1',
+        'search_type'    => 'required|in:email,phone',
+        'email_or_phone' => 'required|string',
+        'amount'         => 'required|numeric|min:1',
     ]);
 
-    $agent  = auth()->user();
-    $amount = $request->amount;
-    $commission = $amount * 0.005;   // 🔥 0.5%
+    // Lookup user safely
+    $user = $request->search_type === 'email'
+        ? User::where('email', $request->email_or_phone)->first()
+        : User::where('phone', $request->email_or_phone)->first();
 
-    // find user
-    if ($request->search_type === 'email') {
-        $user = User::where('email', $request->email)->firstOrFail();
-    } else {
-        $user = User::where('phone', $request->phone)->firstOrFail();
+    if (!$user) {
+        return back()->withErrors([
+            'email_or_phone' => "No user found using this {$request->search_type}. Please double-check and try again.",
+        ])->withInput();
     }
 
-    // user must PAY the commission
-    $totalToDeduct = $amount + $commission;
+    $agent      = auth()->user();
+    $amount     = $request->amount;
+    $commission = $amount * 0.005; // 0.5%
 
-    if ($user->balance < $totalToDeduct) {
-        return back()->withErrors(['amount' => 'User does not have enough balance for amount + commission.']);
+    if ($user->balance < $commission) {
+        return back()->withErrors([
+            'amount' => 'User does not have enough balance to pay the commission.',
+        ])->withInput();
     }
 
-    // update balances
-    $user->balance -= $commission; // commission only
-    $user->balance += $amount;     // cash-in amount
-    $agent->balance += $commission;
+    // Update balances
+    $user->balance  = $user->balance - $commission + $amount;
+    $agent->balance = $agent->balance + $commission;
 
     $user->save();
     $agent->save();
@@ -191,44 +192,41 @@ public function cashIn(Request $request)
         'status'       => 'completed',
     ]);
 
-    return back()->with('success', "Cash-In completed. Commission (0.5%) taken: $$commission");
+    return back()->with('success', "Cash-In completed successfully.");
 }
 
 
-
-    /**
-     * Agent CASH-OUT:
-     * User withdraws cash from wallet (agent gives physical money).
-     */
 public function cashOut(Request $request)
 {
     $request->validate([
-        'search_type_out' => 'required|in:email,phone',
-        'email_out'       => 'nullable|email',
-        'phone_out'       => 'nullable|string',
-        'amount_out'      => 'required|numeric|min:1',
+        'search_type'    => 'required|in:email,phone',
+        'email_or_phone' => 'required|string',
+        'amount'         => 'required|numeric|min:1',
     ]);
 
-    $agent  = auth()->user();
-    $amount = $request->amount_out;
-    $commission = $amount * 0.005;   // 🔥 0.5%
+    // Lookup user safely
+    $user = $request->search_type === 'email'
+        ? User::where('email', $request->email_or_phone)->first()
+        : User::where('phone', $request->email_or_phone)->first();
 
-    // find user
-    if ($request->search_type_out === 'email') {
-        $user = User::where('email', $request->email_out)->firstOrFail();
-    } else {
-        $user = User::where('phone', $request->phone_out)->firstOrFail();
+    if (!$user) {
+        return back()->withErrors([
+            'email_or_phone' => "No user found using this {$request->search_type}. Please enter a valid email or phone.",
+        ])->withInput();
     }
 
-    $totalToDeduct = $amount + $commission;
+    $agent      = auth()->user();
+    $amount     = $request->amount;
+    $commission = $amount * 0.005; // 0.5%
+    $total      = $amount + $commission;
 
-    // check user balance
-    if ($user->balance < $totalToDeduct) {
-        return back()->withErrors(['amount_out' => 'User does not have enough balance for amount + commission.']);
+    if ($user->balance < $total) {
+        return back()->withErrors([
+            'amount' => "User doesn't have enough balance to cash out $amount USD.",
+        ])->withInput();
     }
 
-    // user pays amount + commission
-    $user->balance -= $totalToDeduct;
+    $user->balance  -= $total;
     $agent->balance += $commission;
 
     $user->save();
@@ -244,9 +242,28 @@ public function cashOut(Request $request)
         'status'       => 'completed',
     ]);
 
-    return back()->with('success', "Cash-Out completed. Commission (0.5%) taken: $$commission");
+    return back()->with('success', "Cash-Out completed successfully.");
 }
 
+
+
+public function cashMenu()
+{
+    $agent = Auth::user();
+    return view('agent.cash-menu', compact('agent'));
+}
+
+public function cashInForm()
+{
+    $agent = Auth::user();
+    return view('agent.cash-in', compact('agent'));
+}
+
+public function cashOutForm()
+{
+    $agent = Auth::user();
+    return view('agent.cash-out', compact('agent'));
+}
 
 
 

@@ -47,11 +47,22 @@
 
   <div class="flex items-center gap-4">
     {{-- Cash In / Out button --}}
-    <a href="{{ route('agent.cash.form') }}"
-       class="inline-flex items-center px-5 py-2.5 rounded-full bg-black text-white text-sm font-semibold
-              hover:bg-gray-900 dark:bg-white dark:text-black dark:hover:bg-gray-100 transition">
-      Cash In / Out
-    </a>
+<a href="{{ route('agent.cash.menu') }}"
+   class="inline-flex items-center px-5 py-2.5 rounded-full bg-black text-white text-sm font-semibold
+          hover:bg-gray-900 dark:bg-white dark:text-black dark:hover:bg-gray-100 transition">
+  Cash In / Out
+</a>
+<a href="{{ route('agent.edit.profile') }}"
+   class="inline-flex items-center px-5 py-2.5 rounded-full border border-gray-300
+          bg-white text-sm font-semibold text-gray-800 shadow-sm
+          hover:bg-gray-100 hover:border-gray-400
+          focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black
+          dark:bg-transparent dark:text-gray-100 dark:border-gray-600
+          dark:hover:bg-gray-800 dark:hover:border-gray-500">
+    Edit Profile
+</a>
+
+
 
     {{-- Notifications --}}
     <div class="relative">
@@ -171,85 +182,7 @@
             </div>
           </div>
 
-          {{-- Edit Profile --}}
-          <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-white/10 rounded-xl p-8 mb-8 shadow-sm">
-            <h2 class="text-2xl font-bold mb-4">Edit Profile</h2>
 
-            @if($errors->any())
-              <div class="mb-6 p-4 rounded-lg bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300">
-                <ul class="list-disc pl-5">
-                  @foreach($errors->all() as $error)
-                    <li>{{ $error }}</li>
-                  @endforeach
-                </ul>
-              </div>
-            @endif
-
-            <form action="{{ route('agent.updateProfile') }}" method="POST" class="space-y-4">
-              @csrf
-              <div>
-                <label class="block text-gray-700 dark:text-gray-300 mb-2">Phone</label>
-                <input type="text" name="phone" value="{{ old('phone', $agent->phone) }}"
-                       class="w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white px-4 py-2 @error('phone') border-red-500 @enderror">
-                @error('phone')
-                  <p class="text-sm text-red-500 mt-1">{{ $message }}</p>
-                @enderror
-              </div>
-
-              <div>
-                <label class="block text-gray-700 dark:text-gray-300 mb-2">City</label>
-                <input type="text" name="city" value="{{ old('city', $agent->city) }}"
-                       placeholder="Enter city name"
-                       class="w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white px-4 py-2 @error('city') border-red-500 @enderror">
-                @error('city')
-                  <p class="text-sm text-red-500 mt-1">{{ $message }}</p>
-                @enderror
-                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Location will be automatically updated based on city name</p>
-              </div>
-
-              <div>
-                <label class="block text-gray-700 dark:text-gray-300 mb-2">Commission (%)</label>
-                <input type="number" step="0.01" min="0" max="100" name="commission" value="{{ old('commission', $agent->commission) }}"
-                       class="w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white px-4 py-2 @error('commission') border-red-500 @enderror">
-                @error('commission')
-                  <p class="text-sm text-red-500 mt-1">{{ $message }}</p>
-                @enderror
-              </div>
-
-              <div class="mb-4">
-                <label class="flex items-center gap-3 cursor-pointer">
-                  <input type="checkbox" name="is_available" value="1" {{ old('is_available', $agent->is_available) ? 'checked' : '' }}
-                         class="w-5 h-5 text-primary border-gray-300 rounded focus:ring-primary dark:bg-gray-700 dark:border-gray-600">
-                  <span class="text-gray-700 dark:text-gray-300 font-medium">Set myself as available</span>
-                </label>
-                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 ml-8">When enabled, you'll be shown as available during your work hours</p>
-              </div>
-
-              <div class="grid md:grid-cols-2 gap-4">
-                <div>
-                  <label class="block text-gray-700 dark:text-gray-300 mb-2">Work Start Time</label>
-                  <input type="time" name="work_start_time" value="{{ old('work_start_time', $agent->work_start_time ? substr($agent->work_start_time, 0, 5) : '') }}"
-                         class="w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white px-4 py-2 @error('work_start_time') border-red-500 @enderror">
-                  @error('work_start_time')
-                    <p class="text-sm text-red-500 mt-1">{{ $message }}</p>
-                  @enderror
-                </div>
-
-                <div>
-                  <label class="block text-gray-700 dark:text-gray-300 mb-2">Work End Time</label>
-                  <input type="time" name="work_end_time" value="{{ old('work_end_time', $agent->work_end_time ? substr($agent->work_end_time, 0, 5) : '') }}"
-                         class="w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white px-4 py-2 @error('work_end_time') border-red-500 @enderror">
-                  @error('work_end_time')
-                    <p class="text-sm text-red-500 mt-1">{{ $message }}</p>
-                  @enderror
-                </div>
-              </div>
-
-              <button type="submit" class="bg-black dark:bg:white dark:text:black text-white font-bold py-3 px-6 rounded-full hover:opacity-80 transition-opacity">
-                Save Changes
-              </button>
-            </form>
-          </div>
 
           {{-- Location --}}
           <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-white/10 rounded-xl p-8 shadow-sm">
