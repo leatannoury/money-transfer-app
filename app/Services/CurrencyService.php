@@ -109,10 +109,9 @@ class CurrencyService
      * Convert amount from one currency to another
      */
     public static function convert(float $amount, string $toCurrency, string $fromCurrency = 'USD'): float
-    {  // If same currency, return amount as is
-        if ($fromCurrency === $toCurrency) {
-            return $amount;
-        }
+    {
+        $rate = self::getExchangeRate($toCurrency, $fromCurrency);
+        return $amount * $rate;
     }
 
     /**
