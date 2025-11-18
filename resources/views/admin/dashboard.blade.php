@@ -149,7 +149,7 @@ fetchAndRenderRevenueChart();
         @php
             $statusColors = [
                 'completed' => 'text-green-600 bg-green-100',
-                'pending' => 'text-yellow-600 bg-yellow-100',
+                'in_progress' => 'text-yellow-600 bg-yellow-100',
                 'failed' => 'text-red-600 bg-red-100',
             ];
         @endphp

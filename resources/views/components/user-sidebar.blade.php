@@ -8,7 +8,8 @@
             "background-light": "#f7f7f7",
             "background-dark": "#191919"
           },
-          fontFamily: { display: "Manrope" },
+            fontFamily: { display: ["Inter", "sans-serif"] },
+          borderRadius: { "xl": "1rem" }
         },
       },
     }
