@@ -141,4 +141,9 @@ public function agentNotifications()
     return $this->hasMany(\App\Models\AgentNotification::class, 'agent_id');
 }
 
+public function userNotifications()
+{
+    return $this->hasMany(\App\Models\UserNotification::class);
+}
+
 }

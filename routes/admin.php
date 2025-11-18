@@ -9,6 +9,8 @@ use App\Http\Controllers\Admin\ReviewManagementController;
 use App\Http\Controllers\Admin\FeesController;
 use App\Http\Controllers\Admin\SuspiciousController;
 use App\Http\Controllers\Admin\AdminChatController;
+use App\Http\Controllers\Admin\AdminNotificationController;
+
 
 
 Route::middleware(['auth','check.banned','role:Admin'])->prefix('admin')->name('admin.')->group(function () {
@@ -50,8 +52,10 @@ Route::post('/fees/update', [FeesController::class, 'update'])->name('fees.updat
 Route::get('/transactions/suspicious', [ManageTransactionController::class, 'suspiciousTransactions'])->name('transactions.suspicious');
     Route::post('/transactions/{id}/accept', [SuspiciousController::class, 'acceptSuspicious'])->name('transactions.accept');
     Route::post('/transactions/{id}/reject', [SuspiciousController::class, 'rejectSuspicious'])->name('transactions.reject');
-
-
+    
+    Route::delete('/notifications', [AdminNotificationController::class, 'clear'])
+        ->name('notifications.clear');
+        
        Route::get('/chats', [AdminChatController::class, 'index'])
         ->name('chat.index');
 
@@ -63,4 +67,5 @@ Route::get('/transactions/suspicious', [ManageTransactionController::class, 'sus
 
     Route::post('/chats/{chatRoom}/close', [AdminChatController::class, 'close'])
         ->name('chat.close');
+
 });

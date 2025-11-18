@@ -41,6 +41,10 @@ class BeneficiaryController extends Controller
             return redirect()->back()->with('error', 'The user with this email does not exist.');
         }
 
+        if ($user->hasRole('Agent')) {
+            return redirect()->back()->with('error', 'You cannot add an agent as a beneficiary.');
+        }
+
         // Create beneficiary for the logged-in user
         Beneficiary::create([
             'user_id' => auth()->id(),
@@ -136,9 +140,14 @@ class BeneficiaryController extends Controller
             return redirect()->route('user.transactions')->with('error', 'This beneficiary already exists in your list.');
         }
 
+        if ($otherParty->hasRole('Agent')) {
+            return redirect()->route('user.transactions')->with('error', 'Agents cannot be added as beneficiaries.');
+        }
+
         // Create beneficiary with available information
         Beneficiary::create([
             'user_id' => auth()->id(),
+            'beneficiary_user_id' => $otherParty->id,
             'full_name' => $otherParty->name,
             'payout_method' => 'wallet', // Default value, user can edit later
             'account_number' => null,

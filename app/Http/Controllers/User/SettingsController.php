@@ -6,6 +6,9 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\User;
+use App\Models\Transaction;
+use App\Services\NotificationService;
+use App\Models\Transaction;
 
 class SettingsController extends Controller
 {
@@ -32,6 +35,21 @@ class SettingsController extends Controller
             return back()->with('error', 'You already have a pending request.');
         }
 
+        $hasPendingAgentTransfer = Transaction::where(function ($q) use ($user) {
+                $q->where('sender_id', $user->id)
+                  ->orWhere('receiver_id', $user->id);
+            })
+            ->whereIn('status', ['pending_agent', 'in_progress'])
+            ->where(function ($query) {
+                $query->where('service_type', 'transfer_via_agent')
+                      ->orWhereNotNull('agent_id');
+            })
+            ->exists();
+
+        if ($hasPendingAgentTransfer) {
+            return back()->with('error', 'You cannot request agent status while you have transfers that still require an agent.');
+        }
+
         // Allow users to request again even after rejection (no 30-day wait)
         // If request was previously rejected, allow them to request again
         if ($user->agent_request_status === 'rejected') {
@@ -55,6 +73,11 @@ class SettingsController extends Controller
             $user->phone = $request->phone;
         }
         $user->save();
+
+        NotificationService::notifyAdmins(
+            'New Agent Request',
+            "{$user->name} has requested to become an agent."
+        );
 
         return back()->with('success', 'Your request to become an agent has been submitted. The admin will review it soon.');
     }

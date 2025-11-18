@@ -46,12 +46,7 @@
         {{-- Header --}}
         <header class="flex justify-between items-center mb-10">
             <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Payment Methods</h1>
-            <div class="flex items-center gap-4">
-                <button class="relative text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
-                    <span class="material-icons-outlined">notifications</span>
-                    <span class="absolute top-0 right-0 w-2 h-2 bg-primary rounded-full"></span>
-                </button>
-            </div>
+            @include('components.user-notification-center')
         </header>
 
         <div class="max-w-4xl mx-auto space-y-6">

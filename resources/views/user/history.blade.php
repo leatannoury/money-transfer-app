@@ -34,12 +34,7 @@
   <!-- Main Content -->
   <main class="flex-1 overflow-y-auto">
     <header class="flex justify-end items-center p-6 border-b border-gray-200 dark:border-gray-800">
-      <div class="flex items-center gap-4">
-        <button class="relative text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100">
-          <span class="material-symbols-outlined !text-2xl">notifications</span>
-          <span class="absolute top-0 right-0 w-2 h-2 bg-primary rounded-full"></span>
-        </button>
-      </div>
+      @include('components.user-notification-center')
     </header>
 
     <div class="p-8">
@@ -122,7 +117,7 @@
             @php
               $isOutgoing = $txn->sender_id == Auth::id();
               $otherParty = $isOutgoing ? $txn->receiver : $txn->sender;
-              $canAddBeneficiary = $otherParty !== null;
+              $canAddBeneficiary = $otherParty !== null && !$otherParty->hasRole('Agent');
               $otherPartyName = $otherParty->name ?? '';
               $otherPartyPhone = $otherParty->phone ?? '';
               $alreadyBeneficiary = $canAddBeneficiary && (
