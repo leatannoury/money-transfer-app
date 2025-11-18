@@ -64,8 +64,7 @@ Route::middleware(['auth', 'check.banned', 'role:Agent'])
         // 🔹 Notifications
         // -----------------------------
         Route::post('/notifications/read-all', [AgentController::class, 'markNotificationsRead'])
-            ->name('notifications.read');
-
-        Route::delete('/notifications', [AgentController::class, 'clearNotifications'])
+    ->name('notifications.read');
+     Route::delete('/notifications', [AgentController::class, 'clearNotifications'])
             ->name('notifications.clear');
-    });
+});

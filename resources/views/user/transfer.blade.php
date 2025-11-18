@@ -1,39 +1,12 @@
 @extends('layouts.app', ['noNav' => true])
 
 @section('content')
-<!DOCTYPE html>
-<html lang="en" class="">
-<head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Send Money - Transferly</title>
-  <script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet"/>
-  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
- 
-  <script>
-    tailwind.config = {
-      darkMode: "class",
-      theme: {
-        extend: {
-          colors: {
-            primary: "#000000",
-            "background-light": "#f7f7f7",
-            "background-dark": "#191919"
-          },
-          fontFamily: { display: "Manrope" },
-        },
-      },
-    }
-  </script>
-</head>
 
-<body class="font-display bg-background-light dark:bg-background-dark text-gray-900 dark:text-gray-100">
 <div class="flex h-screen">
 @include('components.user-sidebar')
 
   <!-- Main Content -->
-  <main class="flex-1 overflow-y-auto">
+  <div class="flex-1 overflow-y-auto">
     <header class="flex justify-end items-center p-6 border-b border-gray-200 dark:border-gray-800">
       @include('components.user-notification-center')
     </header>
@@ -354,7 +327,7 @@
         </form>
       </div>
     </div>
-  </main>
+                    </div>
 </div>
 
 <script>
@@ -507,7 +480,4 @@ window.addEventListener('DOMContentLoaded', togglePaymentDropdowns);
 </script>
 @endif
 
-
-</body>
-</html>
 @endsection
