@@ -33,6 +33,12 @@
             </a>
           </li>
           <li>
+            <a href="{{ route('admin.refunds.index') }}" class="flex items-center gap-3 px-4 py-2.5 rounded-lg text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 transition-colors">
+              <span class="material-symbols-outlined">assignment_return</span>
+              <span class="text-sm font-medium">Refund Requests</span>
+            </a>
+          </li>
+          <li>
               <a href="{{ route('admin.fees') }}" 
                 class="flex items-center gap-3 px-4 py-2.5 rounded-lg text-gray-500 
                         hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 transition-colors">

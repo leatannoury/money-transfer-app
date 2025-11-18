@@ -45,10 +45,9 @@ class AgentController extends Controller
 
         // ✅ Fetch latest notifications for this agent
         $notifications = $agent->agentNotifications()
-        ->where('is_read', false)
-        ->latest()
-        ->take(5)
-        ->get();
+            ->latest()
+            ->take(10)
+            ->get();
 
         // ✅ Count unread notifications
         $unreadCount = $agent->agentNotifications()

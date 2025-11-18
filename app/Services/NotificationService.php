@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\RefundRequest;
 use App\Models\Transaction;
 use App\Models\User;
 use App\Models\UserNotification;
@@ -128,6 +129,81 @@ class NotificationService
         );
     }
 
+    public static function refundRequestSubmitted(Transaction $transaction, User $requester, string $type): void
+    {
+        $typeLabel = $type === 'dispute' ? 'dispute' : 'refund';
+        $amount = self::formatAmount($transaction);
+
+        self::sendUserNotification(
+            $requester,
+            'refund_request',
+            ucfirst($typeLabel) . ' request submitted',
+            "We received your {$typeLabel} request for {$amount}. Our team will review it shortly.",
+            $transaction
+        );
+
+        self::notifyAdmins(
+            'New ' . ucfirst($typeLabel) . ' request',
+            sprintf(
+                '%s submitted a %s request for transaction #%d.',
+                $requester->name,
+                $typeLabel,
+                $transaction->id
+            ),
+            $transaction
+        );
+    }
+
+    public static function refundRequestApproved(RefundRequest $refundRequest): void
+    {
+        $transaction = $refundRequest->transaction;
+        $transaction?->loadMissing(['sender', 'receiver']);
+
+        $currency = $refundRequest->currency ?? $transaction?->currency ?? 'USD';
+        $amount = $refundRequest->requested_amount ?? $transaction?->amount ?? 0;
+        $formatted = CurrencyService::format($amount, $currency);
+
+        if ($transaction?->sender) {
+            self::sendUserNotification(
+                $transaction->sender,
+                'refund_approved',
+                'Refund approved',
+                "Your {$refundRequest->type} request was approved. {$formatted} will be available in your wallet shortly.",
+                $transaction
+            );
+        }
+
+        if ($transaction?->receiver) {
+            self::sendUserNotification(
+                $transaction->receiver,
+                'refund_approved',
+                'Transaction refunded',
+                "Transaction #{$transaction->id} was refunded. {$formatted} has been deducted from your wallet.",
+                $transaction
+            );
+        }
+    }
+
+    public static function refundRequestRejected(RefundRequest $refundRequest): void
+    {
+        $transaction = $refundRequest->transaction;
+        $transaction?->loadMissing(['sender', 'receiver']);
+
+        if ($refundRequest->user) {
+            $note = $refundRequest->resolution_note
+                ? ' Reason: ' . $refundRequest->resolution_note
+                : '';
+
+            self::sendUserNotification(
+                $refundRequest->user,
+                'refund_rejected',
+                ucfirst($refundRequest->type) . ' request rejected',
+                "Your {$refundRequest->type} request for transaction #{$transaction?->id} was rejected." . $note,
+                $transaction
+            );
+        }
+    }
+
     protected static function formatAmount(Transaction $transaction): string
     {
         $currency = $transaction->currency ?? 'USD';
@@ -147,6 +223,35 @@ class NotificationService
                 $transaction
             );
         }
+    }
+    
+    public static function sendAgentNotification(User $agent, string $title, string $message, Transaction $transaction)
+    {
+        // Save notification inside DB
+        UserNotification::create([
+            'user_id'       => $agent->id,
+            'title'         => $title,
+            'message'       => $message,
+            'transaction_id'=> $transaction->id,
+            'is_read'       => false,
+        ]);
+
+        // OPTIONAL: Send email if agent has email
+        // Mail::to($agent->email)->send(new AgentTransferNotification($transaction));
+    }
+
+
+    /**
+     * Generic notification method (in case you need it)
+     */
+    public static function sendNotification(User $user, string $title, string $message)
+    {
+        UserNotification::create([
+            'user_id' => $user->id,
+            'title'   => $title,
+            'message' => $message,
+            'is_read' => false,
+        ]);
     }
 }
 

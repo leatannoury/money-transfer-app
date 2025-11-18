@@ -33,7 +33,12 @@
 
   <!-- Main Content -->
   <main class="flex-1 overflow-y-auto">
-    <header class="flex justify-end items-center p-6 border-b border-gray-200 dark:border-gray-800">
+    <header class="flex justify-between items-center p-6 border-b border-gray-200 dark:border-gray-800">
+      <a href="{{ route('user.refunds.index') }}"
+         class="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-gray-300 text-sm font-semibold text-gray-700 hover:bg-gray-100 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800 transition">
+        <span class="material-symbols-outlined !text-base">assignment_returned</span>
+        Refund Requests
+      </a>
       @include('components.user-notification-center')
     </header>
 
@@ -169,12 +174,25 @@
                       {{ \App\Services\CurrencyService::format($txn->amount, $txnCurrency) }}
                     </p>
                   @endif
-                  <p class="text-sm 
-                    @if($txn->status == 'completed') text-green-600 dark:text-green-500
-                    @elseif($txn->status == 'pending') text-yellow-500
-                    @else text-red-500
-                    @endif">
-                    {{ ucfirst($txn->status) }}
+                  @php
+                    $statusColors = [
+                      'completed' => 'text-green-600 dark:text-green-500',
+                      'pending' => 'text-yellow-600 dark:text-yellow-400',
+                      'pending_agent' => 'text-yellow-600 dark:text-yellow-400',
+                      'in_progress' => 'text-yellow-600 dark:text-yellow-400',
+                      'suspicious' => 'text-orange-600 dark:text-orange-400',
+                      'disputed' => 'text-purple-600 dark:text-purple-400',
+                      'refunded' => 'text-blue-600 dark:text-blue-400',
+                      'failed' => 'text-red-500 dark:text-red-400',
+                    ];
+                  @endphp
+                  @php
+                    $statusLabel = $txn->status === 'disputed'
+                      ? 'Refund pending'
+                      : ucfirst(str_replace('_', ' ', $txn->status));
+                  @endphp
+                  <p class="text-sm {{ $statusColors[$txn->status] ?? 'text-gray-500 dark:text-gray-400' }}">
+                    {{ $statusLabel }}
                   </p>
                 </div>
                 

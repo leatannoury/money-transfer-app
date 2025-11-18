@@ -9,7 +9,6 @@ use App\Models\User;
 use App\Models\Transaction;
 use App\Models\Beneficiary;
 use App\Services\CurrencyService;
-use App\Models\AgentNotification;
 use App\Models\PaymentMethod;
 use App\Models\FakeCard;
 use App\Models\FakeBankAccount;
@@ -191,12 +190,14 @@ class TransferController extends Controller
                 'sender_id' => $sender->id,
                 'receiver_id' => $receiver->id,
                 'amount' => $amount,
+                'amount_usd' => $amountInUsd,
                 'currency' => $transactionCurrency,
                 'status' => $transactionStatus,
                 'agent_id' => $admin->id,
                 'service_type' => $serviceType,
                 'payment_method' => $request->payment_method,
-                // 'fee' => $feeInUsd, // store fee for later admin approval
+                'fee_percent' => $adminCommission,
+                'fee_amount_usd' => $feeInUsd,
             ]);
 
             $message = $transactionStatus === 'suspicious'
@@ -219,20 +220,25 @@ class TransferController extends Controller
                 'sender_id' => $sender->id,
                 'receiver_id' => $receiver->id,
                 'amount' => $amount,
+                'amount_usd' => $amountInUsd,
                 'currency' => $transactionCurrency,
                 'status' => $status,
                 'agent_id' => $request->agent_id ?? null,
                 'service_type' => $serviceType,
                 'payment_method' => $request->payment_method,
+                'fee_percent' => $selectedAgent->commission ?? null,
+                'fee_amount_usd' => 0,
             ]);
 
-             if ($transaction->agent_id) {
-                AgentNotification::create([
-                    'agent_id' => $transaction->agent_id,
-                    'transaction_id' => $transaction->id,
-                    'title' => 'New money transfer request',
-                    'message' => "You have a new transfer of " . CurrencyService::format($transaction->amount, $transaction->currency ?? 'USD') . " from {$sender->name} to {$receiver->name}.",
-                ]);
+            if ($transaction->agent_id) {
+                $transaction->loadMissing('agent');
+
+                NotificationService::sendAgentNotification(
+                    $transaction->agent,
+                    'New money transfer request',
+                    "You have a new transfer of " . CurrencyService::format($transaction->amount, $transaction->currency ?? 'USD') . " from {$sender->name} to {$receiver->name}.",
+                    $transaction
+                );
             }
 
             $message = $request->agent_id

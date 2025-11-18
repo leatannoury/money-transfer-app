@@ -12,6 +12,7 @@ use App\Http\Controllers\User\SettingsController;
 use App\Http\Controllers\User\PaymentMethodController;
 use App\Http\Controllers\User\SupportChatController;
 use App\Http\Controllers\User\UserNotificationController;
+use App\Http\Controllers\User\RefundController;
 
 
 // All user routes will share these middlewares
@@ -49,6 +50,8 @@ Route::put('/payment-methods/{method}/primary', [PaymentMethodController::class,
     Route::post('/settings/request-agent', [SettingsController::class, 'requestAgentStatus'])->name('settings.request-agent');
     Route::post('/settings/cancel-agent-request', [SettingsController::class, 'cancelAgentRequest'])->name('settings.cancel-agent-request');
     Route::resource('payment-methods', PaymentMethodController::class);
+    Route::post('/notifications/read-all', [UserNotificationController::class, 'markRead'])
+        ->name('notifications.read');
     Route::delete('/notifications', [UserNotificationController::class, 'clear'])
         ->name('notifications.clear');
         
@@ -57,4 +60,7 @@ Route::put('/payment-methods/{method}/primary', [PaymentMethodController::class,
 
     Route::post('/support/chat/send', [SupportChatController::class, 'sendMessage'])
         ->name('chat.send');
+
+    Route::get('/refunds', [RefundController::class, 'index'])->name('refunds.index');
+    Route::post('/refunds', [RefundController::class, 'store'])->name('refunds.store');
 });

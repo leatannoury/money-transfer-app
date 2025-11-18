@@ -8,6 +8,8 @@
     class="flex items-center gap-4"
     data-user-notif-root
     data-clear-url="{{ $clearUrl }}"
+    data-read-url="{{ route('user.notifications.read') }}"
+    data-unread="{{ $unreadCount }}"
 >
     <div class="relative">
         <button
@@ -31,6 +33,7 @@
         <div
             class="hidden absolute right-0 mt-2 w-80 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg z-50"
             data-role="notif-dropdown"
+            data-read="{{ $unreadCount > 0 ? '0' : '1' }}"
         >
             <div class="px-4 py-3 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
                 <div>
@@ -103,11 +106,38 @@
             const list = root.querySelector('[data-role="notif-list"]');
             const emptyState = root.querySelector('[data-role="notif-empty"]');
             const clearUrl = root.dataset.clearUrl;
+            const readUrl = root.dataset.readUrl;
+            let unreadCount = Number(root.dataset.unread ?? 0);
 
             if (trigger && dropdown) {
                 trigger.addEventListener('click', (event) => {
                     event.stopPropagation();
                     dropdown.classList.toggle('hidden');
+
+                    if (!dropdown.classList.contains('hidden')
+                        && unreadCount > 0
+                        && dropdown.dataset.read !== '1'
+                        && readUrl
+                        && csrf) {
+                        fetch(readUrl, {
+                            method: 'POST',
+                            headers: {
+                                'X-CSRF-TOKEN': csrf,
+                                'Accept': 'application/json',
+                            },
+                        }).then(() => {
+                            dropdown.dataset.read = '1';
+                            unreadCount = 0;
+                            if (unreadText) {
+                                unreadText.textContent = '0 unread';
+                            }
+                            if (dot) {
+                                dot.remove();
+                            }
+                        }).catch(() => {
+                            // ignore
+                        });
+                    }
                 });
 
                 document.addEventListener('click', (event) => {
@@ -139,6 +169,7 @@
                             if (dot) {
                                 dot.remove();
                             }
+                            unreadCount = 0;
                             if (list) {
                                 list.innerHTML = '';
                                 list.classList.add('hidden');
