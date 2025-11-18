@@ -9,13 +9,19 @@
           <span class="material-symbols-outlined">dashboard</span>
           <span>Dashboard</span>
         </a>
-        <a href="{{ route('user.transactions') }}" class="flex items-center gap-3 p-3 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-800">
-          <span class="material-symbols-outlined">receipt_long</span>
-          <span>Transactions</span>
+
+        <a href="{{ route('user.transfer-services') }}" class="flex items-center gap-3 p-3 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-800">
+          <span class="material-symbols-outlined">sync_alt</span>
+          <span>Transfer Services</span>
         </a>
+
         <a href="{{ route('user.transfer') }}" class="flex items-center gap-3 p-3 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-800">
           <span class="material-symbols-outlined">north_east</span>
           <span>Send Money</span>
+        </a>
+                <a href="{{ route('user.transactions') }}" class="flex items-center gap-3 p-3 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-800">
+          <span class="material-symbols-outlined">receipt_long</span>
+          <span>Transactions</span>
         </a>
           <a href="{{ route('user.beneficiary.index') }}" class="flex items-center gap-3 p-3 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-800">
         <span class="material-symbols-outlined">people</span>
