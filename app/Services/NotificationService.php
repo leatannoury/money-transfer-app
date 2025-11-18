@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\AgentNotification;
 use App\Models\RefundRequest;
 use App\Models\Transaction;
 use App\Models\User;
@@ -228,8 +229,8 @@ class NotificationService
     public static function sendAgentNotification(User $agent, string $title, string $message, Transaction $transaction)
     {
         // Save notification inside DB
-        UserNotification::create([
-            'user_id'       => $agent->id,
+        AgentNotification::create([
+            'agent_id'       => $agent->id,
             'title'         => $title,
             'message'       => $message,
             'transaction_id'=> $transaction->id,

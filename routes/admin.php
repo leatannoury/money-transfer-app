@@ -55,9 +55,16 @@ Route::post('/fees/update', [FeesController::class, 'update'])->name('fees.updat
 Route::get('/transactions/suspicious', [ManageTransactionController::class, 'suspiciousTransactions'])->name('transactions.suspicious');
     Route::post('/transactions/{id}/accept', [SuspiciousController::class, 'acceptSuspicious'])->name('transactions.accept');
     Route::post('/transactions/{id}/reject', [SuspiciousController::class, 'rejectSuspicious'])->name('transactions.reject');
+   
     
-    Route::delete('/notifications', [AdminNotificationController::class, 'clear'])
-        ->name('notifications.clear');
+Route::post('/notifications/read', [AdminNotificationController::class, 'markRead'])
+    ->name('notifications.read');
+
+      Route::delete('/notifications', [AdminNotificationController::class, 'clear'])
+          ->name('notifications.clear');
+   
+
+
         
        Route::get('/chats', [AdminChatController::class, 'index'])
         ->name('chat.index');
