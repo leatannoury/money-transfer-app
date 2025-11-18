@@ -132,18 +132,22 @@ public function bankAccounts() {
     }
 
     public function paymentMethods()
-{
-    return $this->hasMany(\App\Models\PaymentMethod::class);
-}
+    {
+        return $this->hasMany(\App\Models\PaymentMethod::class);
+    }
 
-public function agentNotifications()
-{
-    return $this->hasMany(\App\Models\AgentNotification::class, 'agent_id');
-}
+    public function agentNotifications()
+    {
+        return $this->hasMany(\App\Models\AgentNotification::class, 'agent_id');
+    }
 
-public function userNotifications()
-{
-    return $this->hasMany(\App\Models\UserNotification::class);
-}
+    public function userNotifications()
+    {
+        return $this->hasMany(\App\Models\UserNotification::class);
+    }
 
+    public function refundRequests()
+    {
+        return $this->hasMany(RefundRequest::class);
+    }
 }

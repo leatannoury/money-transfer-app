@@ -8,6 +8,8 @@
     class="flex items-center gap-4"
     data-admin-notif-root
     data-clear-url="{{ $adminClearUrl }}"
+    data-read-url="{{ route('admin.notifications.read') }}"
+    data-unread="{{ $adminUnreadCount }}"
 >
     <div class="relative">
         <button
@@ -27,6 +29,7 @@
         <div
             class="hidden absolute right-0 mt-2 w-80 bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-xl shadow-xl z-50"
             data-role="admin-notif-dropdown"
+            data-read="{{ $adminUnreadCount > 0 ? '0' : '1' }}"
         >
             <div class="px-4 py-3 border-b border-border-light dark:border-border-dark flex items-center justify-between">
                 <div>
@@ -95,11 +98,38 @@
             const list = root.querySelector('[data-role="admin-notif-list"]');
             const emptyState = root.querySelector('[data-role="admin-notif-empty"]');
             const clearUrl = root.dataset.clearUrl;
+            const readUrl = root.dataset.readUrl;
+            let unreadCount = Number(root.dataset.unread ?? 0);
 
             if (trigger && dropdown) {
                 trigger.addEventListener('click', (event) => {
                     event.stopPropagation();
                     dropdown.classList.toggle('hidden');
+
+                    if (!dropdown.classList.contains('hidden')
+                        && unreadCount > 0
+                        && dropdown.dataset.read !== '1'
+                        && readUrl
+                        && csrf) {
+                        fetch(readUrl, {
+                            method: 'POST',
+                            headers: {
+                                'X-CSRF-TOKEN': csrf,
+                                'Accept': 'application/json',
+                            },
+                        }).then(() => {
+                            dropdown.dataset.read = '1';
+                            unreadCount = 0;
+                            if (unreadText) {
+                                unreadText.textContent = '0 unread';
+                            }
+                            if (dot) {
+                                dot.remove();
+                            }
+                        }).catch(() => {
+                            // ignore errors
+                        });
+                    }
                 });
 
                 document.addEventListener('click', (event) => {
@@ -125,6 +155,7 @@
                         },
                     })
                         .then(() => {
+                            unreadCount = 0;
                             if (unreadText) {
                                 unreadText.textContent = '0 unread';
                             }

@@ -50,13 +50,14 @@
           <span class="material-symbols-outlined">receipt_long</span>
           <span>Transactions</span>
         </a>
-      </li>
-
-      <li>
-        <a href="{{ route('user.transfer') }}" 
+            <a href="{{ route('user.refunds.index') }}" class="flex items-center gap-3 p-3 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-800">
+          <span class="material-symbols-outlined">assignment_returned</span>
+          <span>Refund Requests</span>
+        </a>
+  <a href="{{ route('user.transfer') }}" 
            class="flex items-center gap-3 px-4 py-2.5 rounded-lg text-gray-600 dark:text-gray-400 
                   hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
-          <span class="material-symbols-outlined">north_east</span>
+                            <span class="material-symbols-outlined">north_east</span>
           <span>Send Money</span>
         </a>
       </li>

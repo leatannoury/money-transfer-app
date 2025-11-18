@@ -11,6 +11,8 @@ use App\Http\Controllers\Admin\SuspiciousController;
 use App\Http\Controllers\Admin\AdminChatController;
 use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\AdminNotificationController;
+use App\Http\Controllers\Admin\RefundRequestController;
+
 
 
 
@@ -53,9 +55,16 @@ Route::post('/fees/update', [FeesController::class, 'update'])->name('fees.updat
 Route::get('/transactions/suspicious', [ManageTransactionController::class, 'suspiciousTransactions'])->name('transactions.suspicious');
     Route::post('/transactions/{id}/accept', [SuspiciousController::class, 'acceptSuspicious'])->name('transactions.accept');
     Route::post('/transactions/{id}/reject', [SuspiciousController::class, 'rejectSuspicious'])->name('transactions.reject');
+   
     
-    Route::delete('/notifications', [AdminNotificationController::class, 'clear'])
-        ->name('notifications.clear');
+Route::post('/notifications/read', [AdminNotificationController::class, 'markRead'])
+    ->name('notifications.read');
+
+      Route::delete('/notifications', [AdminNotificationController::class, 'clear'])
+          ->name('notifications.clear');
+   
+
+
         
        Route::get('/chats', [AdminChatController::class, 'index'])
         ->name('chat.index');
@@ -73,5 +82,7 @@ Route::get('/transactions/suspicious', [ManageTransactionController::class, 'sus
     
     Route::get('/reports/generate', [ReportController::class, 'generate'])->name('reports.generate');
 
+ Route::get('/refunds', [RefundRequestController::class, 'index'])->name('refunds.index');
+    Route::post('/refunds/{refundRequest}/decision', [RefundRequestController::class, 'decide'])->name('refunds.decide');
 
 });

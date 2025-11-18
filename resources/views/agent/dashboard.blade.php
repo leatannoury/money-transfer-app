@@ -46,7 +46,7 @@
       {{-- Dropdown --}}
       <div id="notifDropdown"
            class="hidden absolute right-0 mt-2 w-80 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg z-50"
-           data-read="0">
+           data-read="{{ ($unreadCount ?? 0) > 0 ? '0' : '1' }}">
         <div class="px-4 py-2 border-b border-gray-200 dark:border-gray-800 flex justify-between items-center">
           <div>
             <span class="text-sm font-semibold text-gray-800 dark:text-gray-100">Notifications</span>
@@ -65,7 +65,10 @@
         @if(isset($notifications) && $notifications->count())
           <ul class="max-h-80 overflow-y-auto" id="notifList">
             @foreach($notifications as $n)
-              <li class="border-b border-gray-100 dark:border-gray-800 last:border-0">
+              <li @class([
+                    'border-b border-gray-100 dark:border-gray-800 last:border-0',
+                    'bg-black/5 dark:bg-white/5' => !$n->is_read,
+                ])>
                 <a href="{{ route('agent.transactions') }}"
                    class="block px-4 py-3 text-sm hover:bg-gray-50 dark:hover:bg-gray-800">
                   <div class="font-semibold text-gray-800 dark:text-gray-100">

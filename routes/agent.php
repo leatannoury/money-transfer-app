@@ -57,8 +57,11 @@ Route::middleware(['auth', 'check.banned', 'role:Agent'])
         Route::post('/cash-out', [TransactionController::class, 'cashOut'])
             ->name('cash.out');               // => agent.cash.out
 
-Route::get('/edit-profile', [AgentController::class, 'editProfilePage'])
-    ->name('edit.profile');        // 🔹 Notifications
+        Route::get('/edit-profile', [AgentController::class, 'editProfilePage'])
+            ->name('edit.profile');
+
+        // -----------------------------
+        // 🔹 Notifications
         // -----------------------------
         Route::post('/notifications/read-all', [AgentController::class, 'markNotificationsRead'])
     ->name('notifications.read');

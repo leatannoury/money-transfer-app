@@ -28,10 +28,11 @@ class TransactionController extends Controller
             ->orderBy('created_at', 'desc')
             ->get();
 
-        return view('agent.transactions', compact('transactions', 'agent'));
         $agent->agentNotifications()
-    ->where('is_read', false)
-    ->update(['is_read' => true]);
+            ->where('is_read', false)
+            ->update(['is_read' => true]);
+
+        return view('agent.transactions', compact('transactions', 'agent'));
     }
 
     /**
@@ -105,8 +106,11 @@ class TransactionController extends Controller
         $receiver->balance += $receiverAmount;
         $agent->balance    += $commissionAmount;
 
-        // ✅ mark transaction completed
+        // ✅ mark transaction completed and persist fee data
         $transaction->status = 'completed';
+        $transaction->amount_usd = $amountInUsd;
+        $transaction->fee_percent = $commissionRate;
+        $transaction->fee_amount_usd = $commissionAmount;
 
         // ✅ save all changes
         $sender->save();
@@ -183,15 +187,33 @@ public function cashIn(Request $request)
     $user->save();
     $agent->save();
 
-    Transaction::create([
+    $transaction = Transaction::create([
         'sender_id'    => $agent->id,
         'receiver_id'  => $user->id,
         'amount'       => $amount,
+        'amount_usd'   => $amount,
         'currency'     => 'USD',
         'service_type' => 'cash_in',
         'agent_id'     => $agent->id,
         'status'       => 'completed',
+        'fee_percent'  => 0.5,
+        'fee_amount_usd' => $commission,
     ]);
+
+    NotificationService::sendAgentNotification(
+        $agent,
+        'Cash-In Completed',
+        "You loaded " . CurrencyService::format($amount, 'USD') . " for {$user->name}.",
+        $transaction
+    );
+
+    NotificationService::sendUserNotification(
+        $user,
+        'cash_in',
+        'Cash-In Completed',
+        "Agent {$agent->name} added " . CurrencyService::format($amount, 'USD') . " to your wallet (fee " . CurrencyService::format($commission, 'USD') . ").",
+        $transaction
+    );
 
     return back()->with('success', "Cash-In completed successfully.");
 }
@@ -233,15 +255,33 @@ public function cashOut(Request $request)
     $user->save();
     $agent->save();
 
-    Transaction::create([
+    $transaction = Transaction::create([
         'sender_id'    => $user->id,
         'receiver_id'  => $agent->id,
         'amount'       => $amount,
+        'amount_usd'   => $amount,
         'currency'     => 'USD',
         'service_type' => 'cash_out',
         'agent_id'     => $agent->id,
         'status'       => 'completed',
+        'fee_percent'  => 0.5,
+        'fee_amount_usd' => $commission,
     ]);
+
+    NotificationService::sendAgentNotification(
+        $agent,
+        'Cash-Out Completed',
+        "You handed " . CurrencyService::format($amount, 'USD') . " to {$user->name}.",
+        $transaction
+    );
+
+    NotificationService::sendUserNotification(
+        $user,
+        'cash_out',
+        'Cash-Out Completed',
+        "Agent {$agent->name} processed your cash-out of " . CurrencyService::format($amount, 'USD') . " (fee " . CurrencyService::format($commission, 'USD') . ").",
+        $transaction
+    );
 
     return back()->with('success', "Cash-Out completed successfully.");
 }
