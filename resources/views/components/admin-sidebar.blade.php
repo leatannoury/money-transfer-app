@@ -23,6 +23,18 @@
       }
     }
   </script>
+  <style>
+:root {
+    --bg-card-light: #ffffff;
+    --bg-card-dark: #1f2937;
+    --text-light: #f9fafb;
+    --text-dark: #111827;
+}
+.bg-card-light { background-color: var(--bg-card-light); }
+.bg-card-dark { background-color: var(--bg-card-dark); }
+.text-light { color: var(--text-light); }
+.text-dark { color: var(--text-dark); }
+</style>
 
 
 
@@ -95,6 +107,17 @@
           <span class="text-sm font-medium">Support Chats</span>
         </a>
       </li>
+
+
+      <li>
+          <a href="{{ route('admin.reports.generate') }}" 
+            class="flex items-center gap-3 px-4 py-2.5 rounded-lg text-gray-500 
+                    hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 transition-colors">
+              <span class="material-symbols-outlined">analytics</span>
+              <span class="text-sm font-medium">Generate Reports</span>
+          </a>
+      </li>
+
 
         </ul>
       </nav>

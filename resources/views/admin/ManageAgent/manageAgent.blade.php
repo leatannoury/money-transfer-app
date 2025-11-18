@@ -20,7 +20,7 @@
           <h3 class="text-lg font-semibold">Agent List</h3>
           <div class="flex gap-2">
             <a href="{{ route('admin.agents.requests') }}">
-              <button class="bg-warning text-white px-4 py-2 rounded-lg hover:bg-yellow-600 transition flex items-center gap-1">
+              <button class="bg-warning bg-yellow-600 text-white px-4 py-2 rounded-lg hover:bg-yellow-700 transition flex items-center gap-1">
                 <span class="material-symbols-outlined text-sm">pending_actions</span>
                 <span>View Requests</span>
                 @php
@@ -32,7 +32,7 @@
               </button>
             </a>
             <a href="{{ route('admin.agents.add') }}">
-              <button class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition flex items-center gap-1">
+              <button class="bg-primary bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition flex items-center gap-1">
                 <span class="material-symbols-outlined text-sm">add</span>
                 <span>Add Agent</span>
               </button>

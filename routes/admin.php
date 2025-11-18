@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\ReviewManagementController;
 use App\Http\Controllers\Admin\FeesController;
 use App\Http\Controllers\Admin\SuspiciousController;
 use App\Http\Controllers\Admin\AdminChatController;
+use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\AdminNotificationController;
 
 
@@ -67,5 +68,10 @@ Route::get('/transactions/suspicious', [ManageTransactionController::class, 'sus
 
     Route::post('/chats/{chatRoom}/close', [AdminChatController::class, 'close'])
         ->name('chat.close');
+
+
+    
+    Route::get('/reports/generate', [ReportController::class, 'generate'])->name('reports.generate');
+
 
 });

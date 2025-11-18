@@ -20,7 +20,7 @@
        <div class="flex justify-between items-center mb-6">
     <h3 class="text-lg font-semibold">User List</h3>
     <a href="{{ route('admin.users.add') }}">
-        <button class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition flex items-center gap-1">
+        <button class="bg-primary bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition flex items-center gap-1">
             <span class="material-symbols-outlined text-sm">add</span>
             <span>Add User</span>
         </button>
