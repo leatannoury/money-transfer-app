@@ -12,7 +12,7 @@ class ManageTransactionController extends Controller
 public function manageTransaction(Request $request)
 {
     $walletToWalletQuery = Transaction::with(['sender', 'receiver'])
-        ->whereNull('agent_id');
+      ->where('service_type','wallet_to_wallet');
 
     // Email filter (sender or receiver)
     if ($request->filled('wallet_email')) {
@@ -65,7 +65,7 @@ public function manageTransaction(Request $request)
     // 🔹 WALLET TO PERSON TRANSACTIONS
     // ================================
     $walletToPersonQuery = Transaction::with(['sender', 'receiver', 'agent'])
-        ->whereNotNull('agent_id');
+    ->where('service_type','transfer_via_agent');
 
     // Email filter (sender, receiver, or agent)
     if ($request->filled('person_email')) {
@@ -115,10 +115,119 @@ public function manageTransaction(Request $request)
     }
 
     $walletToPerson = $walletToPersonQuery->paginate(10)->withQueryString();
+
+
+    // ================================
+    // 🔵 CASH IN (agent -> user)
+    // ================================
+    $cashInQuery = Transaction::with(['sender', 'receiver'])
+        ->where('service_type', 'cash_in');
+
+    // FILTER BY EMAIL
+    if ($request->filled('cash_in_email')) {
+        $email = $request->cash_in_email;
+
+        $cashInQuery->where(function ($q) use ($email) {
+            $q->whereHas('receiver', function ($q2) use ($email) {
+                $q2->where('email', 'like', "%{$email}%"); // user
+            })->orWhereHas('sender', function ($q2) use ($email) {
+                $q2->where('email', 'like', "%{$email}%"); // agent
+            });
+        });
+    }
+
+    // STATUS FILTER
+    if ($request->filled('cash_in_status')) {
+        $cashInQuery->where('status', $request->cash_in_status);
+    }
+
+    // DATE RANGE
+    if ($request->filled('cash_in_from')) {
+        $cashInQuery->whereDate('created_at', '>=', $request->cash_in_from);
+    }
+    if ($request->filled('cash_in_to')) {
+        $cashInQuery->whereDate('created_at', '<=', $request->cash_in_to);
+    }
+
+    // SORTING
+    if ($request->filled('cash_in_sort')) {
+        switch ($request->cash_in_sort) {
+            case 'oldest':
+                $cashInQuery->orderBy('created_at', 'asc');
+                break;
+            case 'amount_desc':
+                $cashInQuery->orderBy('amount', 'desc');
+                break;
+            case 'amount_asc':
+                $cashInQuery->orderBy('amount', 'asc');
+                break;
+            default:
+                $cashInQuery->orderBy('created_at', 'desc');
+        }
+    } else {
+        $cashInQuery->orderBy('created_at', 'desc');
+    }
+
+    $cashIn = $cashInQuery->paginate(10)->withQueryString();
+
+
+
+    // ================================
+    // 🔴 CASH OUT (user -> agent)
+    // ================================
+    $cashOutQuery = Transaction::with(['sender', 'receiver'])
+        ->where('service_type', 'cash_out');
+
+    // FILTER BY EMAIL
+    if ($request->filled('cash_out_email')) {
+        $email = $request->cash_out_email;
+
+        $cashOutQuery->where(function ($q) use ($email) {
+            $q->whereHas('sender', function ($q2) use ($email) {
+                $q2->where('email', 'like', "%{$email}%"); // user
+            })->orWhereHas('receiver', function ($q2) use ($email) {
+                $q2->where('email', 'like', "%{$email}%"); // agent
+            });
+        });
+    }
+
+    // STATUS FILTER
+    if ($request->filled('cash_out_status')) {
+        $cashOutQuery->where('status', $request->cash_out_status);
+    }
+
+    // DATE RANGE
+    if ($request->filled('cash_out_from')) {
+        $cashOutQuery->whereDate('created_at', '>=', $request->cash_out_from);
+    }
+    if ($request->filled('cash_out_to')) {
+        $cashOutQuery->whereDate('created_at', '<=', $request->cash_out_to);
+    }
+
+    // SORTING
+    if ($request->filled('cash_out_sort')) {
+        switch ($request->cash_out_sort) {
+            case 'oldest':
+                $cashOutQuery->orderBy('created_at', 'asc');
+                break;
+            case 'amount_desc':
+                $cashOutQuery->orderBy('amount', 'desc');
+                break;
+            case 'amount_asc':
+                $cashOutQuery->orderBy('amount', 'asc');
+                break;
+            default:
+                $cashOutQuery->orderBy('created_at', 'desc');
+        }
+    } else {
+        $cashOutQuery->orderBy('created_at', 'desc');
+    }
+
+    $cashOut = $cashOutQuery->paginate(10)->withQueryString();
      
 
     // Return to view
-    return view('admin.ManageTransaction.manageTransaction', compact('walletToWallet', 'walletToPerson'));
+    return view('admin.ManageTransaction.manageTransaction', compact('walletToWallet', 'walletToPerson','cashIn', 'cashOut'));
 }
 
 // Show suspicious transactions

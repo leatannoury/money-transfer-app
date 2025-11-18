@@ -186,4 +186,10 @@ class AgentController extends Controller
 
         return back()->with('success', 'Location updated successfully!');
     }
+    public function editProfilePage()
+{
+    $agent = Auth::user();
+    return view('agent.edit-profile', compact('agent'));
+}
+
 }
