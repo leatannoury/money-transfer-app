@@ -2,7 +2,7 @@
 
 @section('content')
 <div class="flex min-h-screen">
-    <main class="flex-1 flex flex-col">
+    <div class="flex-1 flex flex-col">
         <header class="flex items-center justify-center border-b px-8 py-4 bg-card-light dark:bg-card-dark">
             <h2 class="text-xl font-bold">Edit User</h2>
         </header>
@@ -62,6 +62,6 @@
                 </form>
             </div>
         </div>
-    </main>
+</div>
 </div>
 @endsection

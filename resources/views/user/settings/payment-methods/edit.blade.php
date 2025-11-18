@@ -2,44 +2,11 @@
 
 @section('content')
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Edit Payment Method - Transferly</title>
-  
-  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
-  <script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
-
-  <script>
-    tailwind.config = {
-      darkMode: "class",
-      theme: {
-        extend: {
-          colors: { primary: "#000000", "background-light": "#f7f7f7", "background-dark": "#191919" },
-          fontFamily: { display: "Manrope" },
-          borderRadius: { DEFAULT: "0.25rem", lg: "0.5rem", xl: "0.75rem", full: "9999px" },
-        }
-      }
-    }
-  </script>
-
-  <style>
-    .material-icons-outlined { font-size: 24px; line-height: 1; }
-    input[type=text]:focus, input[type=password]:focus { --tw-ring-color: #000000; }
-    .dark input[type=text]:focus, .dark input[type=password]:focus { --tw-ring-color: #ffffff; }
-  </style>
-</head>
-
-<body class="font-display bg-background-light dark:bg-background-dark text-gray-800 dark:text-gray-200">
-
 <div class="flex min-h-screen">
   
   @include('components.user-sidebar')
 
-  <main class="flex-1 p-8 overflow-y-auto">
+  <div class="flex-1 p-8 overflow-y-auto">
 
     @php
         $methodType = $method->type === 'bank_account' ? 'bank' : 'card';
@@ -181,6 +148,6 @@
         </form>
       </div>
     </div>
-  </main>
+</div>
 </div>
 @endsection

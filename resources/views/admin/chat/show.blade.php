@@ -1,22 +1,14 @@
 @extends('layouts.app', ['noNav' => true])
 
 @section('content')
-<html lang="en" class="light">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Chat - Transferly</title>
-    <script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
-</head>
 
-<body class="font-display bg-background-light dark:bg-background-dark text-text-light dark:text-text-dark">
 <div class="flex h-screen">
 
     <!-- Sidebar -->
     @include('components.admin-sidebar')
 
     <!-- Main -->
-    <main class="flex-1 overflow-y-auto">
+    <div class="flex-1 overflow-y-auto">
 
         <!-- Header -->
         <header class="flex h-20 items-center justify-between border-b border-[#CCCCCC] px-8 dark:border-white/20">
@@ -76,8 +68,7 @@
             </div>
         </div>
 
-    </main>
 </div>
-</body>
-</html>
+</div>
+
 @endsection

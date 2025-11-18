@@ -1,6 +1,35 @@
-<aside class="w-64 flex-shrink-0 bg-card-light dark:bg-card-dark border-r border-border-light dark:border-border-dark flex flex-col">
-      <div class="p-6 flex items-center gap-3 border-b border-border-light dark:border-border-dark">
-        <div class="bg-primary text-white p-2 rounded-lg">
+<script>
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "primary": { DEFAULT: "#3B82F6" },
+            "background-light": "#F9FAFB",
+            "background-dark": "#111827",
+            "card-light": "#FFFFFF",
+            "card-dark": "#1F2937",
+            "text-light": "#1F2937",
+            "text-dark": "#F9FAFB",
+            "border-light": "#E5E7EB",
+            "border-dark": "#374151",
+            "success": "#10B981",
+            "warning": "#F59E0B",
+            "error": "#EF4444",
+          },
+          fontFamily: { display: ["Inter", "sans-serif"] },
+          borderRadius: { "xl": "1rem" }
+        }
+      }
+    }
+  </script>
+
+
+
+<aside class="w-64 flex-shrink-0 bg-card-light dark:bg-card-dark border-r border-border-light dark:border-border-dark flex flex-col
+               fixed top-0 left-0 h-screen">
+                     <div class="p-6 flex items-center gap-3 border-b border-border-light dark:border-border-dark">
+        <div class="bg-black text-white p-2 rounded-lg">
           <span class="material-symbols-outlined">dashboard</span>
         </div>
         <h1 class="text-lg font-bold">Admin Panel</h1>

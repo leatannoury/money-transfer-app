@@ -61,7 +61,7 @@ Route::get('/edit-profile', [AgentController::class, 'editProfilePage'])
     ->name('edit.profile');        // 🔹 Notifications
         // -----------------------------
         Route::post('/notifications/read-all', [AgentController::class, 'markNotificationsRead'])
-    ->name('agent.notifications.read');
+    ->name('notifications.read');
      Route::delete('/notifications', [AgentController::class, 'clearNotifications'])
-            ->name('agent.notifications.clear');
+            ->name('notifications.clear');
 });

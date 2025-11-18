@@ -5,7 +5,7 @@
   <!-- Sidebar -->
   @include('components.user-sidebar')
   <!-- Main Content -->
-  <main class="flex-1">
+  <div class="flex-1">
     <header class="flex h-20 items-center justify-end border-b border-[#CCCCCC] px-8 dark:border-white/20">
       @include('components.user-notification-center')
     </header>
@@ -71,6 +71,6 @@
         </form>
       </div>
     </div>
-  </main>
+</div>
 </div>
 @endsection

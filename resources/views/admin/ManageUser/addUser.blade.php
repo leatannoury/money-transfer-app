@@ -1,25 +1,13 @@
 @extends('layouts.app', ['noNav' => true])
 
 @section('content')
-<html class="light" lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Add User</title>
-  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet">
-</head>
-<body class="font-display bg-background-light dark:bg-background-dark text-text-light dark:text-text-dark">
 
 <div class="flex min-h-screen">
     <!-- Sidebar -->
  
 
     <!-- Main Content -->
-    <main class="flex-1 flex flex-col">
+    <div class="flex-1 flex flex-col">
         <header class="flex items-center justify-center border-b border-border-light dark:border-border-dark px-8 py-4 bg-card-light dark:bg-card-dark">
             <h2 class="text-xl font-bold">Add User</h2>
           
@@ -141,9 +129,8 @@
                 </form>
             </div>
         </div>
-    </main>
+    </div>
 </div>
 
-</body>
-</html>
+
 @endsection
