@@ -1,21 +1,12 @@
 @extends('layouts.app', ['noNav' => true])
 
 @section('content')
-<html lang="en" class="light">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Suspicious Transactions</title>
-  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-</head>
 
-<body class="font-display bg-background-light dark:bg-background-dark text-text-light dark:text-text-dark">
 <div class="relative flex min-h-screen w-full flex-col">
   <div class="flex min-h-screen">
     @include('components.admin-sidebar')
 
-    <main class="flex-1 flex flex-col">
+    <div class="flex-1 flex flex-col">
       <header class="flex items-center justify-center border-b border-border-light dark:border-border-dark px-8 py-4 bg-card-light dark:bg-card-dark">
         <h2 class="text-xl font-bold">Suspicious Wallet-to-Wallet Transactions</h2>
       </header>
@@ -151,7 +142,7 @@
         </div>
 
       </div>
-    </main>
+    </div>
   </div>
 </div>
 @endsection

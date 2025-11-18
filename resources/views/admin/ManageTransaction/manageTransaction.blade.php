@@ -3,12 +3,11 @@
 @section('content')
 
 
-<body class="font-display bg-background-light dark:bg-background-dark text-text-light dark:text-text-dark">
 <div class="relative flex h-auto min-h-screen w-full flex-col">
   <div class="flex min-h-screen">
     @include('components.admin-sidebar')
 
-    <main class="flex-1 flex flex-col">
+    <div class="flex-1 flex flex-col">
       <header class="flex items-center justify-center border-b border-border-light dark:border-border-dark px-8 py-4 bg-card-light dark:bg-card-dark">
         <h2 class="text-xl font-bold">Transaction List</h2>
       </header>
@@ -397,7 +396,7 @@
 </div>
 
       </div>
-    </main>
+    </div>
   </div>
 </div>
 @endsection

@@ -1,47 +1,21 @@
 @extends('layouts.app', ['noNav' => true])
 
 @section('content')
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Payment Methods - Transferly</title>
 
-  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
-  <script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
-
-  <script>
-    tailwind.config = {
-      darkMode: "class",
-      theme: {
-        extend: {
-          colors: {
-            primary: "#000000",
-            "background-light": "#f7f7f7",
-            "background-dark": "#191919",
-          },
-          fontFamily: { display: "Manrope" },
-        }
-      }
-    }
-  </script>
 
   <style>
     .material-icons-outlined { font-size: 24px; line-height: 1; }
     input[type=text]:focus, input[type=password]:focus { --tw-ring-color: #000000; }
     .dark input[type=text]:focus, .dark input[type=password]:focus { --tw-ring-color: #ffffff; }
   </style>
-</head>
 
-<body class="font-display bg-background-light dark:bg-background-dark text-gray-800 dark:text-gray-200">
+
 <div class="flex min-h-screen">
 
     {{-- Sidebar --}}
     @include('components.user-sidebar')
 
-    <main class="flex-1 p-8 overflow-y-auto">
+    <div class="flex-1 p-8 overflow-y-auto">
 
         {{-- Header --}}
         <header class="flex justify-between items-center mb-10">
@@ -67,7 +41,7 @@
                 <div id="cards-content" class="hidden px-6 pb-6 space-y-4">
                     <a href="{{ route('user.payment-methods.create', ['type' => 'card']) }}"
                        class="w-full bg-gray-100 dark:bg-gray-700/50 text-gray-700 dark:text-gray-300 font-semibold py-3 px-4 rounded-lg flex items-center justify-center gap-2 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary dark:focus:ring-offset-background-dark">
-                        <span class="material-icons-outlined text-base">add</span>
+                      
                         <span>Add New Credit Card</span>
                     </a>
 
@@ -140,7 +114,6 @@
     <div id="banks-content" class="hidden px-6 pb-6 space-y-4">
         <a href="{{ route('user.payment-methods.create', ['type' => 'bank']) }}"
            class="w-full bg-gray-100 dark:bg-gray-700/50 text-gray-700 dark:text-gray-300 font-semibold py-3 px-4 rounded-lg flex items-center justify-center gap-2 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary dark:focus:ring-offset-background-dark">
-            <span class="material-icons-outlined text-base">add</span>
             <span>Add New Bank Account</span>
         </a>
 
@@ -206,7 +179,7 @@
 
 
         </div>
-    </main>
+</div>
 </div>
 
 
@@ -257,20 +230,13 @@
     const isOpen = localStorage.getItem(targetId) === 'open';
     if (isOpen) {
       content.classList.remove('hidden');
-      icon.classList.add('rotate-180');
     }
 
     header.addEventListener('click', () => {
       const isHidden = content.classList.toggle('hidden');
-      icon.classList.toggle('rotate-180');
       localStorage.setItem(targetId, isHidden ? 'closed' : 'open');
     });
   });
 </script>
 
-
-
-
-</body>
-</html>
 @endsection

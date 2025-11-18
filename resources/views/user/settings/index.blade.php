@@ -2,39 +2,13 @@
 @extends('layouts.app', ['noNav' => true])
 
 @section('content')
-<!DOCTYPE html>
-<html lang="en" class="light">
-<head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Settings - Transferly</title>
-  <script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet"/>
-  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
-  <script>
-    tailwind.config = {
-      darkMode: "class",
-      theme: {
-        extend: {
-          colors: {
-            primary: "#000000",
-            "background-light": "#f7f7f7",
-            "background-dark": "#191919"
-          },
-          fontFamily: { display: "Manrope" },
-        },
-      },
-    }
-  </script>
-</head>
 
-<body class="font-display bg-background-light dark:bg-background-dark text-gray-900 dark:text-gray-100">
 <div class="flex h-screen">
   <!-- Sidebar -->
   @include('components.user-sidebar')
 
   <!-- Main Content -->
-  <main class="flex-1 p-8 overflow-y-auto">
+  <div class="flex-1 p-8 overflow-y-auto">
     <header class="flex justify-between items-center mb-10">
       <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Settings</h1>
       @include('components.user-notification-center')
@@ -160,8 +134,7 @@
       </div>
     </div>
     @endif
-  </main>
 </div>
-</body>
-</html>
+</div>
+
 @endsection
