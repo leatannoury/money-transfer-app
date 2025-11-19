@@ -183,7 +183,10 @@
     </div>
 
     <div class="col-span-2 lg:col-span-1">
-        <a href="{{ route('user.transfer', ['service' => $service->id]) }}"
+        <a href="{{ route('user.transfer', [
+        'transfer_service_id' => $service->id,
+        'payout' => $service->payout_method
+    ]) }}"
            class="w-full block text-center bg-black text-white py-2.5 px-4 rounded-md text-sm font-semibold hover:bg-gray-800 transition">
             Use this service
         </a>

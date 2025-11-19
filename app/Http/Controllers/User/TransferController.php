@@ -40,6 +40,17 @@ class TransferController extends Controller
 
         // Get selected transfer service if provided
         $selectedService = null;
+        $payoutType = $request->query('payout');
+
+if ($request->transfer_service_id) {
+            $selectedService = TransferService::find($request->transfer_service_id);
+            // Optionally, you can override $payoutType with the service's type
+            // if you prefer the DB value over the URL parameter
+            if ($selectedService) {
+                $payoutType = $selectedService->destination_type;
+            }
+        }
+
         $defaultPaymentMethod = null;
 
         if ($request->has('service')) {
@@ -84,6 +95,7 @@ class TransferController extends Controller
             'cards' => $cards, // Sender's cards
             'banks' => $banks, // Sender's banks
             'selectedService' => $selectedService,
+            'payoutType' ,
             'defaultPaymentMethod' => $defaultPaymentMethod,
             'fakeCards' => $fakeCards, // New: Recipient's fake cards
             'fakeBankAccounts' => $fakeBankAccounts, // New: Recipient's fake banks
