@@ -70,8 +70,10 @@
     <label for="source_type" class="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
         Sender Source
     </label>
-    <select name="source_type" id="source_type" class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800 focus:ring-2 focus:ring-primary text-gray-900 dark:text-white">
-        <option value="any">Any Source</option>
+   <select name="source_type" id="source_type" class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800 focus:ring-2 focus:ring-primary text-gray-900 dark:text-white"
+        onchange="this.form.submit()">
+         
+    <option value="any">Any Source</option>
         @foreach($sourceTypes as $sourceType)
             <option 
                 value="{{ $sourceType }}" 
@@ -87,8 +89,9 @@
     <label for="payout_method" class="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
         Payout Method
     </label>
-    <select name="payout_method" id="payout_method" class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800 focus:ring-2 focus:ring-primary text-gray-900 dark:text-white">
-        
+    <select name="payout_method" id="payout_method" class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800 focus:ring-2 focus:ring-primary text-gray-900 dark:text-white"
+        onchange="this.form.submit()">
+       
         <option value="any">Any Payout Method</option>
         
         @foreach($payoutMethods as $method)
@@ -107,8 +110,10 @@
     <label for="speed" class="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
         Speed
     </label>
-    <select name="speed" id="speed" class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800 focus:ring-2 focus:ring-primary text-gray-900 dark:text-white">
-        <option value="any">Any Speed</option>
+   <select name="speed" id="speed" class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800 focus:ring-2 focus:ring-primary text-gray-900 dark:text-white"
+        onchange="this.form.submit()">
+   
+            <option value="any">Any Speed</option>
         
         @foreach($speeds as $speed)
             <option 
@@ -131,10 +136,9 @@
                     <span>$0</span><span>$50</span>
                 </div>
             </div>
-        </div>
 
-        <!-- Promotions -->
-        <div class="mt-6 border-t border-gray-200 dark:border-gray-800 pt-6">
+
+            <div class="flex-1 min-w-[200px]">
             <label class="flex items-start gap-3">
                 <input type="checkbox" name="promotions" value="1"
                        {{ request('promotions') ? 'checked' : '' }}
@@ -144,7 +148,21 @@
                     <p class="text-gray-500 dark:text-gray-400">Only show services with active promotions.</p>
                 </div>
             </label>
+            </div>
+
+                    <div class="flex-1 min-w-[200px]">
+            <a href="{{ route('user.transfer-services') }}" 
+            class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-md text-sm font-medium hover:bg-gray-300 dark:hover:bg-gray-600 transition">
+                Reset Filters
+            </a>
         </div>
+
+
+        </div>
+
+       
+
+
 
     </form>
 </section>
