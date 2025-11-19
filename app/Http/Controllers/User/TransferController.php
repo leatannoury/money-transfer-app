@@ -17,92 +17,93 @@ use App\Models\TransferService;
 
 class TransferController extends Controller
 {
-    public function index(Request $request)
-    {
-        $users = User::where('id', '!=', Auth::id())->get();
-        $beneficiaries = Beneficiary::where('user_id', Auth::id())->get();
-        $currencies = CurrencyService::getSupportedCurrencies();
-        $selectedCurrency = session('user_currency', 'USD');
+  public function index(Request $request)
+{
+    $users = User::where('id', '!=', Auth::id())->get();
+    $beneficiaries = Beneficiary::where('user_id', Auth::id())->get();
+    $currencies = CurrencyService::getSupportedCurrencies();
+    $selectedCurrency = session('user_currency', 'USD');
 
-        $availableAgents = User::role('Agent')
-            ->where('is_available', true)
-            ->where('status', 'active')
-            ->get()
-            ->filter(fn($agent) => $agent->isCurrentlyAvailable())
-            ->values();
+    $availableAgents = User::role('Agent')
+        ->where('is_available', true)
+        ->where('status', 'active')
+        ->get()
+        ->filter(fn($agent) => $agent->isCurrentlyAvailable())
+        ->values();
 
-        $fakeCards = FakeCard::all();
-        $fakeBankAccounts = FakeBankAccount::all();
+    $fakeCards = FakeCard::all();
+    $fakeBankAccounts = FakeBankAccount::all();
 
-        // Define all available cards and banks first (used if no service is selected)
-        $cards = Auth::user()->paymentMethods()->where('type', 'credit_card')->get();
-        $banks = Auth::user()->paymentMethods()->where('type', 'bank_account')->get();
+    // Define all available cards and banks first (used if no service is selected)
+    $cards = Auth::user()->paymentMethods()->where('type', 'credit_card')->get();
+    $banks = Auth::user()->paymentMethods()->where('type', 'bank_account')->get();
 
-        // Get selected transfer service if provided
-        $selectedService = null;
-        $payoutType = $request->query('payout');
+    // Get selected transfer service if provided
+    $selectedService = null;
+    $payoutType = $request->query('payout');
 
-if ($request->transfer_service_id) {
-            $selectedService = TransferService::find($request->transfer_service_id);
-            // Optionally, you can override $payoutType with the service's type
-            // if you prefer the DB value over the URL parameter
-            if ($selectedService) {
-                $payoutType = $selectedService->destination_type;
-            }
+    if ($request->transfer_service_id) {
+        $selectedService = TransferService::find($request->transfer_service_id);
+        // Optionally, you can override $payoutType with the service's type
+        // if you prefer the DB value over the URL parameter
+        if ($selectedService) {
+            $payoutType = $selectedService->destination_type;
         }
-
-        $defaultPaymentMethod = null;
-
-        if ($request->has('service')) {
-            $selectedService = TransferService::find($request->get('service'));
-            
-            // START: LOGIC TO DETERMINE AVAILABLE PAYMENT METHODS BASED ON SELECTED SERVICE
-            if ($selectedService) {
-                switch ($selectedService->source_type) {
-                    case 'wallet':
-                        // Source is the user's wallet balance. Clear card/bank lists.
-                        $cards = collect([]);
-                        $banks = collect([]);
-                        $defaultPaymentMethod = 'wallet';
-                        break;
-                    case 'card':
-                        // Source must be a card. Only show cards.
-                        $banks = collect([]); // Clear banks
-                        $defaultPaymentMethod = 'credit_card';
-                        break;
-                    case 'bank':
-                        // Source must be a bank account. Only show banks.
-                        $cards = collect([]); // Clear cards
-                        $defaultPaymentMethod = 'bank_account';
-                        break;
-                    default:
-                        // Fallback, do nothing (keep all as defined above)
-                        break;
-                }
-            }
-            // END: LOGIC TO DETERMINE AVAILABLE PAYMENT METHODS BASED ON SELECTED SERVICE
-        } 
-        // If no service is selected, the initial $cards and $banks (all) will be used.
-        // The rest of the function remains the same.
-
-
-        return view('user.transfer', [
-            'users' => $users,
-            'beneficiaries' => $beneficiaries,
-            'currencies' => $currencies,
-            'selectedCurrency' => $selectedCurrency,
-            'availableAgents' => $availableAgents,
-            'cards' => $cards, // Sender's cards
-            'banks' => $banks, // Sender's banks
-            'selectedService' => $selectedService,
-            'payoutType' ,
-            'defaultPaymentMethod' => $defaultPaymentMethod,
-            'fakeCards' => $fakeCards, // New: Recipient's fake cards
-            'fakeBankAccounts' => $fakeBankAccounts, // New: Recipient's fake banks
-
-        ]);
     }
 
+    $defaultPaymentMethod = null;
+
+    if ($request->has('service') || $request->has('transfer_service_id')) {
+        // Support both 'service' and 'transfer_service_id' parameters
+        $serviceId = $request->get('service') ?? $request->get('transfer_service_id');
+        $selectedService = TransferService::find($serviceId);
+        
+        // START: LOGIC TO DETERMINE AVAILABLE PAYMENT METHODS BASED ON SELECTED SERVICE
+        if ($selectedService) {
+            switch ($selectedService->source_type) {
+                case 'wallet':
+                    // Source is the user's wallet balance. Clear card/bank lists.
+                    $cards = collect([]);
+                    $banks = collect([]);
+                    $defaultPaymentMethod = 'wallet';
+                    break;
+                case 'card':
+                case 'credit_card': // Handle both variations
+                    // Source must be a card. Only show cards.
+                    $banks = collect([]); // Clear banks
+                    $defaultPaymentMethod = 'credit_card';
+                    break;
+                case 'bank':
+                case 'bank_account': // Handle both variations
+                    // Source must be a bank account. Only show banks.
+                    $cards = collect([]); // Clear cards
+                    $defaultPaymentMethod = 'bank_account';
+                    break;
+                default:
+                    // Fallback, do nothing (keep all as defined above)
+                    break;
+            }
+        }
+        // END: LOGIC TO DETERMINE AVAILABLE PAYMENT METHODS BASED ON SELECTED SERVICE
+    } 
+    // If no service is selected, the initial $cards and $banks (all) will be used.
+    // The rest of the function remains the same.
+
+    return view('user.transfer', [
+        'users' => $users,
+        'beneficiaries' => $beneficiaries,
+        'currencies' => $currencies,
+        'selectedCurrency' => $selectedCurrency,
+        'availableAgents' => $availableAgents,
+        'cards' => $cards, // Sender's cards
+        'banks' => $banks, // Sender's banks
+        'selectedService' => $selectedService,
+        'payoutType' => $payoutType,
+        'defaultPaymentMethod' => $defaultPaymentMethod,
+        'fakeCards' => $fakeCards, // New: Recipient's fake cards
+        'fakeBankAccounts' => $fakeBankAccounts, // New: Recipient's fake banks
+    ]);
+}
 public function send(Request $request)
 {
 // In TransferController.php, public function send(Request $request)
