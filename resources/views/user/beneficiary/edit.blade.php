@@ -5,14 +5,9 @@
   <!-- Sidebar -->
   @include('components.user-sidebar')
   <!-- Main Content -->
-  <main class="flex-1">
+  <div class="flex-1">
     <header class="flex h-20 items-center justify-end border-b border-[#CCCCCC] px-8 dark:border-white/20">
-      <div class="flex items-center gap-6">
-        <div class="relative">
-          <span class="material-symbols-outlined text-black dark:text-white text-2xl cursor-pointer">notifications</span>
-          <div class="absolute -top-1 -right-1 size-2 rounded-full bg-black dark:bg-white"></div>
-        </div>
-      </div>
+      @include('components.user-notification-center')
     </header>
 
     <div class="p-8 max-w-3xl">
@@ -65,6 +60,6 @@
         </form>
       </div>
     </div>
-  </main>
+</div>
 </div>
 @endsection

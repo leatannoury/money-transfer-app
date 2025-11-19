@@ -1,46 +1,42 @@
 @extends('layouts.app', ['noNav' => true])
 
 @section('content')
-<!DOCTYPE html>
-<html class="light" lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta content="width=device-width, initial-scale=1.0" name="viewport">
-  <title>Manage Reviews - Admin</title>
-  <script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
-  <link href="https://fonts.googleapis.com" rel="preconnect">
-  <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet">
-  <script>
+ <script>
     tailwind.config = {
       darkMode: "class",
       theme: {
         extend: {
           colors: {
-            "primary": "#2563eb",
-            "background-light": "#F9FAFB",
-            "background-dark": "#111827",
-            "card-light": "#FFFFFF",
-            "card-dark": "#1F2937",
-            "border-light": "#E5E7EB",
-            "border-dark": "#374151",
+            primary: "#000000",
+            "background-light": "#f7f7f7",
+            "background-dark": "#191919"
           },
-          fontFamily: {
-            "display": ["Inter", "sans-serif"]
-          },
+          fontFamily: { display: "Manrope" },
         },
       },
     }
   </script>
-</head>
-<body class="font-display bg-background-light dark:bg-background-dark text-gray-900 dark:text-gray-100">
+ 
+  <style>
+:root {
+    --bg-card-light: #ffffff;
+    --bg-card-dark: #1f2937;
+    --text-light: #f9fafb;
+    --text-dark: #111827;
+}
+.bg-card-light { background-color: var(--bg-card-light); }
+.bg-card-dark { background-color: var(--bg-card-dark); }
+.text-light { color: var(--text-light); }
+.text-dark { color: var(--text-dark); }
+</style>
+
   <div class="flex min-h-screen">
     @include('components.admin-sidebar')
-    <main class="flex-1 flex flex-col">
-      <header class="flex items-center justify-center border-b border-border-light dark:border-border-dark px-8 py-4 bg-card-light dark:bg-card-dark">
-        <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Manage Reviews</h2>
-      </header>
+    <div class="flex-1 overflow-y-auto">
+     <header class="flex items-center justify-between border-b border-border-light dark:border-border-dark px-8 py-4 bg-card-light dark:bg-card-dark">
+      <h2 class="text-text-light dark:text-text-dark text-xl font-bold">Manage Review</h2>
+      @include('components.admin-notification-center')
+    </header>
       <div class="flex-1 p-8 overflow-y-auto space-y-8">
 
         @if(session('success'))
@@ -186,9 +182,8 @@
           </section>
         @endif
       </div>
-    </main>
+</div>
   </div>
-</body>
-</html>
+
 @endsection
 

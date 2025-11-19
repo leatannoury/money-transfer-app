@@ -9,11 +9,12 @@ use App\Models\User;
 use App\Models\Transaction;
 use App\Models\Beneficiary;
 use App\Services\CurrencyService;
-use App\Models\AgentNotification;
 use App\Models\PaymentMethod;
 use App\Models\FakeCard;
 use App\Models\FakeBankAccount;
+use App\Services\NotificationService;
 use App\Models\TransferService;
+
 
 class TransferController extends Controller
 {
@@ -515,22 +516,33 @@ if ($receiver->id === $sender->id) {
             }
 
             // Create transaction record
-            Transaction::create([
+            $transaction = Transaction::create([
                 'sender_id' => $sender->id,
                 'receiver_id' => $receiver->id,
-                'amount' => $destinationAmount, // Store amount in destination currency
+                'amount' => $amount,
+                'amount_usd' => $amountInUsd,
                 'currency' => $transactionCurrency,
                 'status' => $transactionStatus,
                 'agent_id' => $admin->id,
                 'service_type' => $serviceType,
                 'payment_method' => $request->payment_method,
+                'fee_percent' => $adminCommission,
+                'fee_amount_usd' => $feeInUsd,
                 'transfer_service_id' => $transferService?->id,
-                'fee' => $feeInUsd,
+
             ]);
 
             $message = $transactionStatus === 'suspicious'
                 ? 'Transaction flagged as suspicious and awaiting admin approval.'
                 : 'Money sent successfully!';
+
+            NotificationService::transferInitiated($transaction);
+
+            if ($transactionStatus === 'suspicious') {
+                NotificationService::transferPendingReview($transaction);
+            } else {
+                NotificationService::transferCompleted($transaction);
+            }
 
             return redirect()->route('user.transactions')->with('success', $message);
             
@@ -548,25 +560,29 @@ if ($receiver->id === $sender->id) {
                 'service_type' => $serviceType,
                 'payment_method' => $request->payment_method,
                 'transfer_service_id' => $transferService?->id,
+                'fee_percent' => $selectedAgent->commission ?? null,
+                'fee_amount_usd' => 0,
                 'fee' => $transferService ? (float) $transferService->fee : 0,
             ]);
 
             if ($transaction->agent_id) {
-                AgentNotification::create([
-                    'agent_id' => $transaction->agent_id,
-                    'transaction_id' => $transaction->id,
-                    'title' => 'New money transfer request',
-                    'message' => "You have a new transfer of " . CurrencyService::format($transaction->amount, $transactionCurrency) . " from {$sender->name} to {$receiver->name}.",
-                ]);
+                $transaction->loadMissing('agent');
+
+                NotificationService::sendAgentNotification(
+                    $transaction->agent,
+                    'New money transfer request',
+                    "You have a new transfer of " . CurrencyService::format($transaction->amount, $transaction->currency ?? 'USD') . " from {$sender->name} to {$receiver->name}.",
+                    $transaction
+                );
             }
 
             $message = $request->agent_id
                 ? 'Your transfer request has been sent to the selected agent.'
                 : 'Your transfer request has been sent. An agent will be assigned soon.';
 
+            NotificationService::transferInitiated($transaction);
+
             return redirect()->route('user.transactions')->with('success', $message);
         }
     }
-
-    
 }

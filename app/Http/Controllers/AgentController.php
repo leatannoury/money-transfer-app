@@ -7,31 +7,105 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use App\Services\CurrencyService;
 
 class AgentController extends Controller
 {
-    /**
-     * Display the agent's dashboard (own profile only)
-     */
-    public function dashboard()
+    public function markNotificationsRead()
     {
         /** @var \App\Models\User $agent */
         $agent = Auth::user();
 
-        // ✅ Fetch latest notifications for this agent
-        $notifications = $agent->agentNotifications()
-        ->where('is_read', false)
+        $agent->agentNotifications()
+            ->where('is_read', false)
+            ->update(['is_read' => true]);
+
+        return response()->json(['message' => 'Notifications marked as read.']);
+    }
+
+    public function clearNotifications()
+    {
+        /** @var \App\Models\User $agent */
+        $agent = Auth::user();
+
+        $agent->agentNotifications()->delete();
+
+        return response()->json([
+            'message' => 'Notifications cleared.',
+            'remaining' => 0,
+        ]);
+    }
+
+    /**
+     * Display the agent's dashboard (own profile only)
+     */
+  public function dashboard(Request $request)
+{
+    /** @var \App\Models\User $agent */
+    $agent = Auth::user();
+
+    // -----------------------------
+    // 🔔 Notifications (your logic)
+    // -----------------------------
+    $notifications = $agent->agentNotifications()
         ->latest()
-        ->take(5)
+        ->take(10)
         ->get();
 
-        // ✅ Count unread notifications
-        $unreadCount = $agent->agentNotifications()
-            ->where('is_read', false)
-            ->count();
+    $unreadCount = $agent->agentNotifications()
+        ->where('is_read', false)
+        ->count();
 
-        return view('agent.dashboard', compact('agent', 'notifications', 'unreadCount'));
+    // ------------------------------------
+    // 🌍 Multi-Currency Balance Conversion
+    // ------------------------------------
+    $baseCurrency = 'USD';  // All balances stored in USD
+    $selectedCurrency = $request->query('currency', $baseCurrency);
+
+    // Dropdown currencies
+    $currencies = [
+        'USD' => 'US Dollar',
+        'EUR' => 'Euro',
+        'GBP' => 'British Pound',
+        'JPY' => 'Japanese Yen',
+        'AUD' => 'Australian Dollar',
+        'CAD' => 'Canadian Dollar',
+        'CHF' => 'Swiss Franc',
+        'CNY' => 'Chinese Yuan',
+        'INR' => 'Indian Rupee',
+        'AED' => 'UAE Dirham',
+        'SAR' => 'Saudi Riyal',
+        'LBP' => 'Lebanese Pound',
+    ];
+
+    // Agent balance in USD (base)
+    $balanceUsd = $agent->balance ?? 0;
+
+    // Convert only if showing non-USD currency
+    if ($selectedCurrency === $baseCurrency) {
+        $displayBalance = $balanceUsd;
+    } else {
+        // Make sure your CurrencyService has convert(amount, to, from)
+        $displayBalance = \App\Services\CurrencyService::convert(
+            $balanceUsd,
+            $selectedCurrency,
+            $baseCurrency
+        );
     }
+
+    // ------------------------------------
+    // Return everything to the view
+    // ------------------------------------
+    return view('agent.dashboard', compact(
+        'agent',
+        'notifications',
+        'unreadCount',
+        'currencies',
+        'selectedCurrency',
+        'displayBalance',
+        'baseCurrency'
+    ));
+}
 
     /**
      * Update the agent's profile (phone, city, commission)
@@ -161,4 +235,10 @@ class AgentController extends Controller
 
         return back()->with('success', 'Location updated successfully!');
     }
+    public function editProfilePage()
+{
+    $agent = Auth::user();
+    return view('agent.edit-profile', compact('agent'));
+}
+
 }

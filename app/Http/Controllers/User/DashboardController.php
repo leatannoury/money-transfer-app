@@ -45,7 +45,6 @@ public function index(Request $request)
     $admin = \App\Models\User::role('Admin')->first();
     $walletFee = $admin->commission ?? 0;
 
-
     return view('user.dashboard', compact(
         'user', 
         'transactions', 

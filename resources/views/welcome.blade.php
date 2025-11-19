@@ -14,30 +14,30 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet">
 
-    <script>
-        tailwind.config = {
-            darkMode: "class",
-            theme: {
-                extend: {
-                    colors: {
-                        primary: { DEFAULT: "#3B82F6" },
-                        accent: "#10B981",
-                        "background-light": "#F9FAFB",
-                        "background-dark": "#111827",
-                        "card-light": "#FFFFFF",
-                        "card-dark": "#1F2937",
-                        "text-light": "#1F2937",
-                        "text-dark": "#F9FAFB",
-                        "border-light": "#E5E7EB",
-                        "border-dark": "#374151",
-                    },
-                    fontFamily: {
-                        display: ["Inter", "sans-serif"]
-                    },
-                },
-            },
-        }
-    </script>
+<script>
+  tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        colors: {
+          primary: "#3B82F6",
+          accent: "#10B981",
+          "background-light": "#F9FAFB",
+          "background-dark": "#111827",
+          "card-light": "#FFFFFF",
+          "card-dark": "#1F2937",
+          "text-light": "#1F2937",
+          "text-dark": "#F9FAFB",
+          "border-light": "#E5E7EB",
+          "border-dark": "#374151",
+        },
+        fontFamily: {
+          display: ["Inter", "sans-serif"],
+        },
+      },
+    },
+  };
+</script>
 
     <style>
         .material-symbols-outlined {

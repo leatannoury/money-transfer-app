@@ -31,6 +31,7 @@ class User extends Authenticatable
         'work_start_time',
         'work_end_time',
         'timezone',
+        'agent_request_status',
     ];
 
     /**
@@ -100,44 +101,49 @@ public function bankAccounts() {
      * Check if agent is available now based on current time.
      */
     public function isCurrentlyAvailable(): bool
-    {
-        // First check if availability is enabled
-        if (!$this->is_available) {
-            return false;
-        }
-
-        // Check if work hours are set
-        if (!$this->work_start_time || !$this->work_end_time) {
-            return false;
-        }
-
-        // Get current time in H:i:s format
-        $currentTime = now()->format('H:i:s');
-        
-        // Ensure work times are in H:i:s format (they might be stored as H:i)
-        $startTime = $this->work_start_time;
-        $endTime = $this->work_end_time;
-        
-        // If work times don't have seconds, add :00
-        if (strlen($startTime) === 5) {
-            $startTime .= ':00';
-        }
-        if (strlen($endTime) === 5) {
-            $endTime .= ':00';
-        }
-        
-        // Compare times as strings (works because format is consistent)
-        return $currentTime >= $startTime && $currentTime <= $endTime;
+{
+    // Availability toggle must be ON
+    if (!$this->is_available) {
+        return false;
     }
 
+    // Must have work hours set
+    if (!$this->work_start_time || !$this->work_end_time) {
+        return false;
+    }
+
+    $now   = now()->format('H:i:s');
+    $start = $this->work_start_time;
+    $end   = $this->work_end_time;
+
+    if ($start < $end) {
+        // Normal same-day shift (e.g. 09:00–17:00)
+        return $now >= $start && $now <= $end;
+    }
+
+    // Overnight shift (e.g. 19:00–00:55)
+    // Available if it's after start OR before end
+    return $now >= $start || $now <= $end;
+}
+
+
     public function paymentMethods()
-{
-    return $this->hasMany(\App\Models\PaymentMethod::class);
-}
+    {
+        return $this->hasMany(\App\Models\PaymentMethod::class);
+    }
 
-public function agentNotifications()
-{
-    return $this->hasMany(\App\Models\AgentNotification::class, 'agent_id');
-}
+    public function agentNotifications()
+    {
+        return $this->hasMany(\App\Models\AgentNotification::class, 'agent_id');
+    }
 
+    public function userNotifications()
+    {
+        return $this->hasMany(\App\Models\UserNotification::class);
+    }
+
+    public function refundRequests()
+    {
+        return $this->hasMany(RefundRequest::class);
+    }
 }

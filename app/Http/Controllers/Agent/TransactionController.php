@@ -8,29 +8,53 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Transaction;
 use Illuminate\Support\Facades\Log;
+use App\Services\CurrencyService;
+use App\Services\NotificationService;
 
 class TransactionController extends Controller
 {
     /**
      * Show all transactions assigned to this agent or pending ones
      */
-    public function index()
-    {
-        $agent = Auth::user();
+public function index()
+{
+    $agent = Auth::user();
 
-        $transactions = Transaction::with(['sender', 'receiver']) // 👈 add this
-            ->where(function($query) use ($agent) {
-                $query->where('status', 'pending_agent')
-                      ->orWhere('agent_id', $agent->id);
-            })
-            ->orderBy('created_at', 'desc')
-            ->get();
+    // Mark notifications read
+    $agent->agentNotifications()
+        ->where('is_read', false)
+        ->update(['is_read' => true]);
 
-        return view('agent.transactions', compact('transactions', 'agent'));
-        $agent->agentNotifications()
-    ->where('is_read', false)
-    ->update(['is_read' => true]);
-    }
+    // 1) User ↔ User transfers (anything that is NOT cash_in / cash_out)
+    $userTransfers = Transaction::with(['sender', 'receiver'])
+        ->where('agent_id', $agent->id)
+        ->whereNotIn('service_type', ['cash_in', 'cash_out'])
+        ->orderBy('created_at', 'desc')
+        ->paginate(10, ['*'], 'transfers_page');
+
+    // 2) Cash-In
+    $cashIns = Transaction::with(['sender', 'receiver'])
+        ->where('agent_id', $agent->id)
+        ->where('service_type', 'cash_in')
+        ->orderBy('created_at', 'desc')
+        ->paginate(10, ['*'], 'cash_in_page');
+
+    // 3) Cash-Out
+    $cashOuts = Transaction::with(['sender', 'receiver'])
+        ->where('agent_id', $agent->id)
+        ->where('service_type', 'cash_out')
+        ->orderBy('created_at', 'desc')
+        ->paginate(10, ['*'], 'cash_out_page');
+
+    return view('agent.transactions', compact(
+        'agent',
+        'userTransfers',
+        'cashIns',
+        'cashOuts'
+    ));
+}
+
+
 
     /**
      * Accept a pending transaction (assign to current agent)
@@ -70,30 +94,52 @@ class TransactionController extends Controller
         $sender   = User::find($transaction->sender_id);
         $receiver = User::find($transaction->receiver_id);
 
+        // ✅ Convert transaction amount from transaction currency to USD
+        // All balances are stored in USD, so we need to convert first
+        $transactionCurrency = $transaction->currency ?? 'USD';
+        if ($transactionCurrency === 'USD') {
+            $amountInUsd = $transaction->amount;
+        } else {
+            $amountInUsd = round(CurrencyService::convert($transaction->amount, 'USD', $transactionCurrency), 2);
+            
+            // Validate conversion result - if it's suspiciously large, the conversion might have failed
+            // (e.g., if API fails and defaults to 1.0, 20000 LBP would become 20000 USD)
+            // Check if converted amount is more than 100x the original (indicates likely conversion error)
+            if ($amountInUsd > ($transaction->amount * 100) && $transaction->amount > 100) {
+                \Log::warning("Suspicious currency conversion: {$transaction->amount} {$transactionCurrency} = {$amountInUsd} USD");
+                return back()->with('error', "Currency conversion failed. Please try again or contact support.");
+            }
+        }
+
         // ✅ agent commission rate (e.g., 10%)
         $commissionRate   = $agent->commission; // assuming it's stored as 10 for 10%
-        $commissionAmount = ($transaction->amount * $commissionRate) / 100;
+        $commissionAmount = ($amountInUsd * $commissionRate) / 100;
 
         // ✅ receiver gets the rest
-        $receiverAmount = $transaction->amount - $commissionAmount;
+        $receiverAmount = $amountInUsd - $commissionAmount;
 
-        // ✅ update balances
-        if ($sender->balance < $transaction->amount) {
+        // ✅ update balances (all in USD)
+        if ($sender->balance < $amountInUsd) {
             return back()->with('error', 'Sender does not have enough balance.');
         }
 
-        $sender->balance   -= $transaction->amount;
+        $sender->balance   -= $amountInUsd;
         $receiver->balance += $receiverAmount;
         $agent->balance    += $commissionAmount;
 
-        // ✅ mark transaction completed
+        // ✅ mark transaction completed and persist fee data
         $transaction->status = 'completed';
+        $transaction->amount_usd = $amountInUsd;
+        $transaction->fee_percent = $commissionRate;
+        $transaction->fee_amount_usd = $commissionAmount;
 
         // ✅ save all changes
         $sender->save();
         $receiver->save();
         $agent->save();
         $transaction->save();
+
+        NotificationService::transferCompleted($transaction);
 
         return back()->with('success', 'Transaction completed successfully. Commission credited.');
     }
@@ -106,6 +152,8 @@ class TransactionController extends Controller
         if ($transaction->status == 'in_progress') {
             $transaction->status = 'failed'; // ✅ add quotes
             $transaction->save();
+
+            NotificationService::transferFailed($transaction, 'An agent rejected the transfer request.');
         }
 
         return redirect()->back()->with('success', 'Transaction rejected successfully.');
@@ -131,104 +179,153 @@ class TransactionController extends Controller
 public function cashIn(Request $request)
 {
     $request->validate([
-        'search_type' => 'required|in:email,phone',
-        'email'       => 'nullable|email',
-        'phone'       => 'nullable|string',
-        'amount'      => 'required|numeric|min:1',
+        'search_type'    => 'required|in:email,phone',
+        'email_or_phone' => 'required|string',
+        'amount'         => 'required|numeric|min:1',
     ]);
 
-    $agent  = auth()->user();
-    $amount = $request->amount;
-    $commission = $amount * 0.005;   // 🔥 0.5%
+    // Lookup user safely
+    $user = $request->search_type === 'email'
+        ? User::where('email', $request->email_or_phone)->first()
+        : User::where('phone', $request->email_or_phone)->first();
 
-    // find user
-    if ($request->search_type === 'email') {
-        $user = User::where('email', $request->email)->firstOrFail();
-    } else {
-        $user = User::where('phone', $request->phone)->firstOrFail();
+    if (!$user) {
+        return back()->withErrors([
+            'email_or_phone' => "No user found using this {$request->search_type}. Please double-check and try again.",
+        ])->withInput();
     }
 
-    // user must PAY the commission
-    $totalToDeduct = $amount + $commission;
+    $agent      = auth()->user();
+    $amount     = $request->amount;
+    $commission = $amount * 0.005; // 0.5%
 
-    if ($user->balance < $totalToDeduct) {
-        return back()->withErrors(['amount' => 'User does not have enough balance for amount + commission.']);
-    }
+ 
 
-    // update balances
-    $user->balance -= $commission; // commission only
-    $user->balance += $amount;     // cash-in amount
-    $agent->balance += $commission;
+    // Update balances
+    $user->balance  = $user->balance - $commission + $amount;
+    $agent->balance = $agent->balance + $commission;
 
     $user->save();
     $agent->save();
 
-    Transaction::create([
+    $transaction = Transaction::create([
         'sender_id'    => $agent->id,
         'receiver_id'  => $user->id,
         'amount'       => $amount,
+        'amount_usd'   => $amount,
         'currency'     => 'USD',
         'service_type' => 'cash_in',
         'agent_id'     => $agent->id,
         'status'       => 'completed',
+        'fee_percent'  => 0.5,
+        'fee_amount_usd' => $commission,
     ]);
 
-    return back()->with('success', "Cash-In completed. Commission (0.5%) taken: $$commission");
+    NotificationService::sendAgentNotification(
+        $agent,
+        'Cash-In Completed',
+        "You loaded " . CurrencyService::format($amount, 'USD') . " for {$user->name}.",
+        $transaction
+    );
+
+    NotificationService::sendUserNotification(
+        $user,
+        'cash_in',
+        'Cash-In Completed',
+        "Agent {$agent->name} added " . CurrencyService::format($amount, 'USD') . " to your wallet (fee " . CurrencyService::format($commission, 'USD') . ").",
+        $transaction
+    );
+
+    return back()->with('success', "Cash-In completed successfully.");
 }
 
 
-
-    /**
-     * Agent CASH-OUT:
-     * User withdraws cash from wallet (agent gives physical money).
-     */
 public function cashOut(Request $request)
 {
     $request->validate([
-        'search_type_out' => 'required|in:email,phone',
-        'email_out'       => 'nullable|email',
-        'phone_out'       => 'nullable|string',
-        'amount_out'      => 'required|numeric|min:1',
+        'search_type'    => 'required|in:email,phone',
+        'email_or_phone' => 'required|string',
+        'amount'         => 'required|numeric|min:1',
     ]);
 
-    $agent  = auth()->user();
-    $amount = $request->amount_out;
-    $commission = $amount * 0.005;   // 🔥 0.5%
+    // Lookup user safely
+    $user = $request->search_type === 'email'
+        ? User::where('email', $request->email_or_phone)->first()
+        : User::where('phone', $request->email_or_phone)->first();
 
-    // find user
-    if ($request->search_type_out === 'email') {
-        $user = User::where('email', $request->email_out)->firstOrFail();
-    } else {
-        $user = User::where('phone', $request->phone_out)->firstOrFail();
+    if (!$user) {
+        return back()->withErrors([
+            'email_or_phone' => "No user found using this {$request->search_type}. Please enter a valid email or phone.",
+        ])->withInput();
     }
 
-    $totalToDeduct = $amount + $commission;
+    $agent      = auth()->user();
+    $amount     = $request->amount;
+    $commission = $amount * 0.005; // 0.5%
+    $total      = $amount + $commission;
 
-    // check user balance
-    if ($user->balance < $totalToDeduct) {
-        return back()->withErrors(['amount_out' => 'User does not have enough balance for amount + commission.']);
+    if ($user->balance < $total) {
+        return back()->withErrors([
+            'amount' => "User doesn't have enough balance to cash out $amount USD.",
+        ])->withInput();
     }
 
-    // user pays amount + commission
-    $user->balance -= $totalToDeduct;
+    $user->balance  -= $total;
     $agent->balance += $commission;
 
     $user->save();
     $agent->save();
 
-    Transaction::create([
+    $transaction = Transaction::create([
         'sender_id'    => $user->id,
         'receiver_id'  => $agent->id,
         'amount'       => $amount,
+        'amount_usd'   => $amount,
         'currency'     => 'USD',
         'service_type' => 'cash_out',
         'agent_id'     => $agent->id,
         'status'       => 'completed',
+        'fee_percent'  => 0.5,
+        'fee_amount_usd' => $commission,
     ]);
 
-    return back()->with('success', "Cash-Out completed. Commission (0.5%) taken: $$commission");
+    NotificationService::sendAgentNotification(
+        $agent,
+        'Cash-Out Completed',
+        "You handed " . CurrencyService::format($amount, 'USD') . " to {$user->name}.",
+        $transaction
+    );
+
+    NotificationService::sendUserNotification(
+        $user,
+        'cash_out',
+        'Cash-Out Completed',
+        "Agent {$agent->name} processed your cash-out of " . CurrencyService::format($amount, 'USD') . " (fee " . CurrencyService::format($commission, 'USD') . ").",
+        $transaction
+    );
+
+    return back()->with('success', "Cash-Out completed successfully.");
 }
 
+
+
+public function cashMenu()
+{
+    $agent = Auth::user();
+    return view('agent.cash-menu', compact('agent'));
+}
+
+public function cashInForm()
+{
+    $agent = Auth::user();
+    return view('agent.cash-in', compact('agent'));
+}
+
+public function cashOutForm()
+{
+    $agent = Auth::user();
+    return view('agent.cash-out', compact('agent'));
+}
 
 
 

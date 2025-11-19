@@ -1,62 +1,15 @@
 @extends('layouts.app', ['noNav' => true])
 
 @section('content')
-<html class="light" lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Manage Agents</title>
-  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet">
 
-  <script>
-    tailwind.config = {
-      darkMode: "class",
-      theme: {
-        extend: {
-          colors: {
-            "primary": { DEFAULT: "#3B82F6" },
-            "background-light": "#F9FAFB",
-            "background-dark": "#111827",
-            "card-light": "#FFFFFF",
-            "card-dark": "#1F2937",
-            "text-light": "#1F2937",
-            "text-dark": "#F9FAFB",
-            "border-light": "#E5E7EB",
-            "border-dark": "#374151",
-            "success": "#10B981",
-            "warning": "#F59E0B",
-            "error": "#EF4444",
-          },
-          fontFamily: { display: ["Inter", "sans-serif"] },
-          borderRadius: { "xl": "1rem" }
-        }
-      }
-    }
-  </script>
 
-  <style>
-    .material-symbols-outlined {
-      font-variation-settings:
-      'FILL' 0,
-      'wght' 400,
-      'GRAD' 0,
-      'opsz' 24
-    }
-  </style>
-</head>
-
-<body class="font-display bg-background-light dark:bg-background-dark text-text-light dark:text-text-dark">
 <div class="relative flex h-auto min-h-screen w-full flex-col group/design-root">
   <div class="flex min-h-screen">
     <!-- Sidebar -->
  @include('components.admin-sidebar')
 
     <!-- Main Content -->
-    <main class="flex-1 flex flex-col">
+    <div class="flex-1 flex flex-col">
       <header class="flex items-center justify-center border-b border-border-light dark:border-border-dark px-8 py-4 bg-card-light dark:bg-card-dark">
         <h2 class="text-xl font-bold">Manage Agents</h2>
       </header>
@@ -65,12 +18,26 @@
         <!-- Header Actions -->
         <div class="flex justify-between items-center mb-6">
           <h3 class="text-lg font-semibold">Agent List</h3>
-           <a href="{{ route('admin.agents.add') }}">
-        <button class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition flex items-center gap-1">
-            <span class="material-symbols-outlined text-sm">add</span>
-            <span>Add Agent</span>
-        </button>
-    </a>
+          <div class="flex gap-2">
+            <a href="{{ route('admin.agents.requests') }}">
+              <button class="bg-warning bg-yellow-600 text-white px-4 py-2 rounded-lg hover:bg-yellow-700 transition flex items-center gap-1">
+                <span class="material-symbols-outlined text-sm">pending_actions</span>
+                <span>View Requests</span>
+                @php
+                  $pendingCount = \App\Models\User::where('agent_request_status', 'pending')->count();
+                @endphp
+                @if($pendingCount > 0)
+                  <span class="bg-red-500 text-white text-xs rounded-full px-2 py-0.5">{{ $pendingCount }}</span>
+                @endif
+              </button>
+            </a>
+            <a href="{{ route('admin.agents.add') }}">
+              <button class="bg-primary bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition flex items-center gap-1">
+                <span class="material-symbols-outlined text-sm">add</span>
+                <span>Add Agent</span>
+              </button>
+            </a>
+          </div>
         </div>
 
         <!-- Static Table -->
@@ -181,9 +148,8 @@
          </div>
         </div>
       </div>
-    </main>
+      </div>
   </div>
 </div>
-</body>
-</html>
+
 @endsection

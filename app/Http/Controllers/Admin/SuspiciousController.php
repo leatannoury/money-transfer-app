@@ -7,6 +7,7 @@ use App\Models\Transaction;
 use App\Models\User;
 use App\Models\FakeBankAccount;
 use App\Models\FakeCard;
+use App\Services\NotificationService;
 
 class SuspiciousController extends Controller
 {
@@ -86,6 +87,13 @@ class SuspiciousController extends Controller
         $transaction->status = 'completed';
         $transaction->save();
 
+        NotificationService::transferCompleted($transaction);
+        NotificationService::notifyAdmins(
+            'Suspicious Transaction Approved',
+            "Transaction #{$transaction->id} was approved after review.",
+            $transaction
+        );
+
         return back()->with('success', 'Suspicious transaction accepted and balances updated.');
     }
 
@@ -102,6 +110,13 @@ class SuspiciousController extends Controller
 
         $transaction->status = 'failed';
         $transaction->save();
+
+        NotificationService::transferFailed($transaction, 'Rejected by admin');
+        NotificationService::notifyAdmins(
+            'Suspicious Transaction Rejected',
+            "Transaction #{$transaction->id} was rejected after review.",
+            $transaction
+        );
 
         return back()->with('success', 'Suspicious transaction rejected.');
     }
