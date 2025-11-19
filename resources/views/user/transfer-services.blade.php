@@ -170,13 +170,12 @@
         <p class="font-medium">${{ number_format($service->fee, 2) }}</p>
     </div>
 
-    <div class="col-span-2 lg:col-span-1">
-        <p class="text-xs text-gray-500">Exchange Rate</p>
-        <p class="font-medium">
-    1 USD = {{ number_format($service->exchange_rate, 0) }} {{ $service->destination_currency }}
+<div class="col-span-2 lg:col-span-1">
+    <p class="text-xs text-gray-500">Exchange Rate</p>
+<p class="font-medium">
+    1 USD = {{ rtrim(rtrim(number_format($service->exchange_rate, 4), '0'), '.') }} {{ $service->destination_currency }}
 </p>
-
-    </div>
+</div>
 
     <div class="col-span-2 lg:col-span-1">
         @if ($service->promotion_active)

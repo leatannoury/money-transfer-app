@@ -7,10 +7,7 @@ use Illuminate\Support\Facades\DB;
 
 class TransferServiceSeeder extends Seeder
 {
-    /**
-     * Map of all countries (full name => ISO Alpha-2 code)
-     * Used for Rinvex to fetch currencies.
-     */
+
 private $fallbackCurrencyMap = [
     'Afghanistan' => 'AFN',
     'Albania' => 'ALL',
@@ -207,120 +204,140 @@ private $fallbackCurrencyMap = [
     'Zimbabwe' => 'ZWL',
 ];
 
-// In Database/Seeders/TransferServiceSeeder.php
+// In TransferServiceSeeder.php
 
-public function run(): void
+// In TransferServiceSeeder.php
+
+private function getBaseFallbackRate(string $currency): float
 {
-    // Define your supported countries. Make sure 'Lebanon' is included.
-    $countries = [
-        'Lebanon',
-        'Egypt',
-        'Jordan',
-        'UAE',
-        'Turkey',
-        'USA',
-        // Add all other non-Lebanon countries here
+    // Fix LBP, JOD, and TRY rates to be more realistic (as of late 2023/2024)
+    $fallbackRates = [
+        'USD' => 1.0,
+        // ... (other currencies)
+        'AED' => 3.67,
+        'SAR' => 3.75,
+        // CRITICAL FIX: LBP rate should be the official pegged rate for money transfer 
+        // (If 1 USD = 89,500 LBP is the desired rate for the app)
+        'LBP' => 89500.0, 
+        // JOD is pegged near 0.71, so 1 USD buys ~0.71 JOD. 
+        // Rate is 1/0.71 = ~1.4. The rate in the array is USD/X, so X/USD is what we need.
+        // Wait, the function returns a value X for the rate 1 USD = X Currency
+        // JOD is 1 JOD = 1.41 USD. So 1 USD = 0.71 JOD.
+        'JOD' => 0.71, 
+        // TRY is around 30.5 at the time of writing
+        'TRY' => 30.50, 
+        'EGP' => 31.0,    
     ];
 
-    $services = [];
-    $id = 1; 
+    // If the currency is not found, it defaults to 1.0 (USD)
+    return $fallbackRates[strtoupper($currency)] ?? 1.0;
+}
 
-    foreach ($countries as $country) {
-        // Fetch the currency for the destination country (using your existing helper method)
-        $destinationCurrency = $this->getCurrencyForCountry($country);
-        
-        if ($country === 'Lebanon') {
-            // Rule 1: Lebanon - Only Wallet to Wallet
-            $services[] = [
-                'id' => $id++,
-                'name' => 'Local Wallet Transfer',
-                'source_type' => 'wallet',
-                'destination_type' => 'wallet',
-                'destination_country' => 'Lebanon',
-                'speed' => 'instant',
-                'fee' => 0.50,
-                'exchange_rate' => 1.00, 
-                'promotion_active' => true,
-                'promotion_text' => 'First transfer free for local wallet.',
-                'destination_currency' => $destinationCurrency,
-            ];
-        } else {
-            // Rule 2: Other Countries - All requested combinations
-            $combinations = [
-                // Wallet to: Card, Bank, Cash Pick Up
-                ['source' => 'wallet', 'destination' => 'card', 'name' => 'Wallet to Card'],
-                ['source' => 'wallet', 'destination' => 'bank', 'name' => 'Wallet to Bank'],
-                ['source' => 'wallet', 'destination' => 'cash_pickup', 'name' => 'Wallet to Cash Pickup'],
+    public function run(): void
+    {
+        $countries = [
+            'Lebanon',
+            'Egypt',
+            'Jordan',
+            'UAE',
+            'Turkey',
+            'USA',
+        ];
 
-                // Card to: Card, Bank, Cash Pick Up
-                ['source' => 'card', 'destination' => 'card', 'name' => 'Card to Card'],
-                ['source' => 'card', 'destination' => 'bank', 'name' => 'Card to Bank'],
-                ['source' => 'card', 'destination' => 'cash_pickup', 'name' => 'Card to Cash Pickup'],
+        $services = [];
+        $id = 1;
 
-                // Bank to: Bank, Card, Cash Pick Up
-                ['source' => 'bank', 'destination' => 'bank', 'name' => 'Bank to Bank'],
-                ['source' => 'bank', 'destination' => 'card', 'name' => 'Bank to Card'],
-                ['source' => 'bank', 'destination' => 'cash_pickup', 'name' => 'Bank to Cash Pickup'],
-            ];
+        foreach ($countries as $country) {
 
-            foreach ($combinations as $combo) {
+            $destinationCurrency = $this->getCurrencyForCountry($country);
+
+           // In TransferServiceSeeder.php
+
+            if ($country === 'Lebanon') {
+
                 $services[] = [
                     'id' => $id++,
-                    'name' => $combo['name'] . ' (' . $country . ')',
-                    'source_type' => $combo['source'],
-                    'destination_type' => $combo['destination'],
-                    'destination_country' => $country,
-                    // Example values - adjust these rates/fees as needed
-                    'speed' => $combo['destination'] === 'cash_pickup' ? 'same_day' : 'instant',
-                    'fee' => ($combo['destination'] === 'cash_pickup' ? 5.00 : 2.00),
-                    'exchange_rate' => 1.00, 
-                    'promotion_active' => false,
-                    'promotion_text' => null,
+                    'name' => 'Local Wallet Transfer',
+                    'source_type' => 'wallet',
+                    'destination_type' => 'wallet',
+                    'destination_country' => 'Lebanon',
+                    'speed' => 'instant',
+                    'fee' => 0.50,
+                    // FIX: Change 1.00 to the desired market/official LBP rate (e.g., 89500)
+                    'exchange_rate' => 89500.0, 
+                    'promotion_active' => true,
+                    'promotion_text' => 'First transfer free for local wallet.',
                     'destination_currency' => $destinationCurrency,
                 ];
+
+            } else {
+// ... rest of the code
+
+                // Define combinations
+                $combinations = [
+                    ['source' => 'wallet', 'destination' => 'card', 'name' => 'Wallet to Card'],
+                    ['source' => 'wallet', 'destination' => 'bank', 'name' => 'Wallet to Bank'],
+                    ['source' => 'wallet', 'destination' => 'cash_pickup', 'name' => 'Wallet to Cash Pickup'],
+
+                    ['source' => 'card', 'destination' => 'card', 'name' => 'Card to Card'],
+                    ['source' => 'card', 'destination' => 'bank', 'name' => 'Card to Bank'],
+                    ['source' => 'card', 'destination' => 'cash_pickup', 'name' => 'Card to Cash Pickup'],
+
+                    ['source' => 'bank', 'destination' => 'bank', 'name' => 'Bank to Bank'],
+                    ['source' => 'bank', 'destination' => 'card', 'name' => 'Bank to Card'],
+                    ['source' => 'bank', 'destination' => 'cash_pickup', 'name' => 'Bank to Cash Pickup'],
+                ];
+
+                foreach ($combinations as $combo) {
+
+                    $baseRate = $this->getBaseFallbackRate($destinationCurrency);
+                    $variance = mt_rand(-50, 50) / 10000;
+                    $rate = round($baseRate * (1 + $variance), 4);
+
+                    $services[] = [
+                        'id' => $id++,
+                        'name' => $combo['name'],
+                        'source_type' => $combo['source'],
+                        'destination_type' => $combo['destination'],
+                        'destination_country' => $country,
+                        'speed' => 'instant',
+                        'fee' => mt_rand(500, 2000) / 100,
+                        'exchange_rate' => $rate,
+                        'promotion_active' => (bool) rand(0, 1),
+                        'promotion_text' => rand(0, 1) ? '1st Transfer Free' : 'Best Rate Guarantee',
+                        'destination_currency' => $destinationCurrency,
+                    ];
+                }
             }
         }
-    }
 
-    // --- Existing updateOrInsert loop to seed the database ---
-    foreach ($services as $s) {
-        DB::table('transfer_services')->updateOrInsert(
-            [
-                'name' => $s['name'],
-                'source_type' => $s['source_type'],
-                'destination_type' => $s['destination_type'],
-                'destination_country' => $s['destination_country'],
-            ],
-            [
-                'speed' => $s['speed'],
-                'fee' => $s['fee'],
-                'exchange_rate' => $s['exchange_rate'],
-                'promotion_active' => $s['promotion_active'],
-                'promotion_text' => $s['promotion_text'] ?? null,
-                'destination_currency' => $s['destination_currency'],
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]
-        );
-    }
-}
-
-private function getCurrencyForCountry(string $countryName): string
-{
-    $iso = $this->countryMap[$countryName] ?? null;
-    if (!$iso) return $this->fallbackCurrencyMap[$countryName] ?? 'USD';
-
-    $country = country($iso);
-    if ($country) {
-        $currencies = $country->getCurrencies();
-        if (!empty($currencies) && isset($currencies[0]['iso_4217_code'])) {
-            return $currencies[0]['iso_4217_code'];
+        // Insert/Update into database
+        foreach ($services as $s) {
+            DB::table('transfer_services')->updateOrInsert(
+                [
+                    'name' => $s['name'],
+                    'source_type' => $s['source_type'],
+                    'destination_type' => $s['destination_type'],
+                    'destination_country' => $s['destination_country'],
+                ],
+                [
+                    'speed' => $s['speed'],
+                    'fee' => $s['fee'],
+                    'exchange_rate' => $s['exchange_rate'],
+                    'promotion_active' => $s['promotion_active'],
+                    'promotion_text' => $s['promotion_text'],
+                    'destination_currency' => $s['destination_currency'],
+                    'updated_at' => now(),
+                    'created_at' => now(),
+                ]
+            );
         }
     }
 
-    // fallback to predefined currency map
-    return $this->fallbackCurrencyMap[$countryName] ?? 'USD';
-}
 
-
+    private function getCurrencyForCountry(string $countryName): string
+    {
+        // You had $this->countryMap but it's missing; remove it:
+        return $this->fallbackCurrencyMap[$countryName] ?? 'USD';
+    }
 }

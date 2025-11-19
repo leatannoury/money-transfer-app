@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->enum('agent_request_status', ['pending', 'approved', 'rejected'])->nullable()->after('status');
+            $table->enum('agent_request_status', ['pending', 'approved', 'rejected'])->nullable();
         });
     }
 

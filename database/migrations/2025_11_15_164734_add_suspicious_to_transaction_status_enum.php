@@ -21,11 +21,21 @@ return new class extends Migration
     /**
      * Reverse the migrations.
      */
-    public function down(): void
-    {
-        Schema::table('transactions', function (Blueprint $table) {
-            DB::statement("ALTER TABLE transactions MODIFY COLUMN status ENUM('completed','failed','pending_agent','in_progress') NOT NULL DEFAULT 'completed'");
+public function down(): void
+{
+    // Replace any 'suspicious' values before removing it from ENUM
+    DB::table('transactions')
+        ->where('status', 'suspicious')
+        ->update(['status' => 'failed']); // choose whatever makes sense
 
-        });
-    }
+    Schema::table('transactions', function (Blueprint $table) {
+        DB::statement("
+            ALTER TABLE transactions 
+            MODIFY COLUMN status ENUM(
+                'completed','failed','pending_agent','in_progress'
+            ) NOT NULL DEFAULT 'completed'
+        ");
+    });
+}
+
 };
