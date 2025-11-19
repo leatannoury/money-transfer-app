@@ -103,10 +103,12 @@
         <form method="POST" action="{{ route('user.transfer.send') }}">
           @csrf
 
-          @if(isset($selectedService))
-              <input type="hidden" name="transfer_service_id" value="{{ $selectedService->id }}">
-          @endif
+@if(isset($selectedService))
+    <input type="hidden" name="transfer_service_id" value="{{ $selectedService->id }}">
 
+    {{-- FIX: Add a hidden field to ensure the service's locked currency is sent to the controller --}}
+    <input type="hidden" name="currency" value="{{ $selectedService->destination_currency }}">
+@endif
           {{-- Add this line to pass the destination type to JS, preferably near the top of the form --}}
 @if ($selectedService)
 <input type="hidden" id="selected-service-destination" value="{{ $selectedService->destination_type }}">

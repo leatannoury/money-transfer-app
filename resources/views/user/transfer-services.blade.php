@@ -66,55 +66,59 @@
         </select>
     </div>
 
+    <div class="flex-1 min-w-[200px]">
+    <label for="source_type" class="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
+        Sender Source
+    </label>
+    <select name="source_type" id="source_type" class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800 focus:ring-2 focus:ring-primary text-gray-900 dark:text-white">
+        <option value="any">Any Source</option>
+        @foreach($sourceTypes as $sourceType)
+            <option 
+                value="{{ $sourceType }}" 
+                {{ request('source_type') == $sourceType ? 'selected' : '' }}>
+                {{ ucfirst($sourceType) }}
+            </option>
+        @endforeach
+    </select>
+</div>
+
             <!-- Payout Method -->
-            <div>
-                <span class="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Payout Method</span>
-                <input type="hidden" name="payout_method" id="payout_method" value="{{ request('payout_method','any') }}">
-
-                <div class="flex gap-2">
-                    @php $pm = request('payout_method','any'); @endphp
-
-                    <button type="button" onclick="setFilter('payout_method','any')"
-                        class="flex-1 py-2 px-3 text-sm rounded-md {{ $pm=='any' ? 'bg-black text-white' : 'bg-gray-100 dark:bg-gray-800' }}">
-                        Any
-                    </button>
-
-                    <button type="button" onclick="setFilter('payout_method','cash')"
-                        class="flex-1 py-2 px-3 text-sm rounded-md {{ $pm=='cash' ? 'bg-black text-white' : 'bg-gray-100 dark:bg-gray-800' }}">
-                        Cash
-                    </button>
-
-                    <button type="button" onclick="setFilter('payout_method','wallet')"
-                        class="flex-1 py-2 px-3 text-sm rounded-md {{ $pm=='wallet' ? 'bg-black text-white' : 'bg-gray-100 dark:bg-gray-800' }}">
-                        Wallet
-                    </button>
-                </div>
-            </div>
+<div class="flex-1 min-w-[200px]">
+    <label for="payout_method" class="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
+        Payout Method
+    </label>
+    <select name="payout_method" id="payout_method" class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800 focus:ring-2 focus:ring-primary text-gray-900 dark:text-white">
+        
+        <option value="any">Any Payout Method</option>
+        
+        @foreach($payoutMethods as $method)
+            <option 
+                value="{{ $method }}" 
+                {{ request('payout_method') == $method ? 'selected' : '' }}>
+                {{ ucfirst($method) }}
+            </option>
+        @endforeach
+        
+    </select>
+</div>
 
             <!-- Speed -->
-            <div>
-                <span class="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Transfer Speed</span>
-                <input type="hidden" name="speed" id="speed" value="{{ request('speed','any') }}">
-
-                @php $sp = request('speed','any'); @endphp
-
-                <div class="flex gap-2">
-                    <button type="button" onclick="setFilter('speed','any')"
-                        class="flex-1 py-2 px-3 text-sm rounded-md {{ $sp=='any' ? 'bg-black text-white' : 'bg-gray-100 dark:bg-gray-800' }}">
-                        Any
-                    </button>
-
-                    <button type="button" onclick="setFilter('speed','instant')"
-                        class="flex-1 py-2 px-3 text-sm rounded-md {{ $sp=='instant' ? 'bg-black text-white' : 'bg-gray-100 dark:bg-gray-800' }}">
-                        Instant
-                    </button>
-
-                    <button type="button" onclick="setFilter('speed','hours')"
-                        class="flex-1 py-2 px-3 text-sm rounded-md {{ $sp=='hours' ? 'bg-black text-white' : 'bg-gray-100 dark:bg-gray-800' }}">
-                        Hours
-                    </button>
-                </div>
-            </div>
+         <div class="flex-1 min-w-[200px]">
+    <label for="speed" class="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
+        Speed
+    </label>
+    <select name="speed" id="speed" class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800 focus:ring-2 focus:ring-primary text-gray-900 dark:text-white">
+        <option value="any">Any Speed</option>
+        
+        @foreach($speeds as $speed)
+            <option 
+                value="{{ $speed }}" 
+                {{ request('speed') == $speed ? 'selected' : '' }}>
+                {{ ucfirst($speed) }}
+            </option>
+        @endforeach
+        </select>
+</div>
 
             <!-- Fee Range -->
             <div>

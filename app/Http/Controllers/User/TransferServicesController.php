@@ -22,13 +22,18 @@ public function index(Request $request)
     // Get filtered services
     $query = TransferService::query();
 
-    if ($request->destination) {
+ if ($request->destination) {
         $query->where('destination_country', $request->destination);
     }
 
     if ($request->payout_method && $request->payout_method !== 'any') {
         $query->where('destination_type', $request->payout_method);
     }
+
+    // NEW: Filter by Source Type (Sender's Payment Source)
+    if ($request->source_type && $request->source_type !== 'any') {
+        $query->where('source_type', $request->source_type);
+    } // <--- ADD THIS BLOCK
 
     if ($request->speed && $request->speed !== 'any') {
         $query->where('speed', $request->speed);
@@ -43,7 +48,7 @@ if ($request->fee_max !== null) {
         $query->where('promotion_active', true);
     }
 
-    $services = $query->get();
+$services = $query->get();
 
     // Get dynamic options
     $countries = TransferService::select('destination_country')
@@ -51,17 +56,31 @@ if ($request->fee_max !== null) {
         ->orderBy('destination_country')
         ->pluck('destination_country');
 
+   
+
     $payoutMethods = TransferService::select('destination_type')
         ->distinct()
         ->orderBy('destination_type')
         ->pluck('destination_type');
+
+    // NEW: Get dynamic Source Types
+    $sourceTypes = TransferService::select('source_type')
+        ->distinct()
+        ->orderBy('source_type')
+        ->pluck('source_type');
 
     $speeds = TransferService::select('speed')
         ->distinct()
         ->orderBy('speed')
         ->pluck('speed');
 
-    return view('user.transfer-services', compact('services', 'countries', 'payoutMethods', 'speeds'));
+    return view('user.transfer-services', compact(
+        'services', 
+        'countries', 
+        'payoutMethods', 
+        'sourceTypes',
+        'speeds'
+    ));
 }
 
 }

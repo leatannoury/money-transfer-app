@@ -128,9 +128,48 @@ $rules = [
     'search_type' => 'required|in:email,phone',
     'amount' => 'required|numeric|min:0.01',
     'currency' => 'nullable|string|in:' . implode(',', array_keys($currencies)),
-    'email' => 'nullable|email',
-    'phone' => 'nullable|string',
-    'service_type' => 'required|in:wallet_to_wallet,transfer_via_agent',
+// The recipient (user account) is only required if it's a Wallet-to-Wallet style transfer.
+    // Card/Bank payouts implicitly find the receiver account based on the card/bank details which are later linked to the User.
+    // The user receiver is still determined below, but the fields are not required for validation here.
+    'email' => [
+        'nullable',
+        'email',
+        // ONLY require email/phone if the destination is NOT a card or bank, and the search type is selected.
+        function ($attribute, $value, $fail) use ($request, $destinationType) {
+            $isNormalTransfer = !in_array($destinationType, ['card', 'bank']);
+
+            if ($isNormalTransfer && $request->search_type === 'email' && empty($value)) {
+                $fail("The {$attribute} field is required when search type is email.");
+            }
+        },
+        // The exists rule should ONLY run for normal transfers, as the Card/Bank
+        // transfers might send to a user that doesn't exist yet (created implicitly)
+        function ($attribute, $value, $fail) use ($destinationType) {
+            $isNormalTransfer = !in_array($destinationType, ['card', 'bank']);
+            if ($isNormalTransfer && !empty($value) && !User::where($attribute, $value)->exists()) {
+                $fail("The selected {$attribute} is invalid.");
+            }
+        }
+    ],
+    'phone' => [
+        'nullable',
+        'string',
+        function ($attribute, $value, $fail) use ($request, $destinationType) {
+            $isNormalTransfer = !in_array($destinationType, ['card', 'bank']);
+
+            if ($isNormalTransfer && $request->search_type === 'phone' && empty($value)) {
+                $fail("The {$attribute} field is required when search type is phone.");
+            }
+        },
+        function ($attribute, $value, $fail) use ($destinationType) {
+            $isNormalTransfer = !in_array($destinationType, ['card', 'bank']);
+            if ($isNormalTransfer && !empty($value) && !User::where($attribute, $value)->exists()) {
+                $fail("The selected {$attribute} is invalid.");
+            }
+        }
+    ],
+    // The service_type and agent_id are now also only relevant for wallet-to-wallet style transfers, not for card/bank payouts.
+    'service_type' => 'nullable|in:wallet_to_wallet,transfer_via_agent',
     'agent_id' => 'nullable|exists:users,id',
     'payment_method' => 'required|in:wallet,credit_card,bank_account',
     'card_id' => 'nullable|exists:payment_methods,id',
@@ -161,6 +200,11 @@ if ($destinationType === 'card') {
     ]);
 }
 
+if ($transferService) {
+    // If a service is selected, the currency must be present and must match the service's destination currency.
+    $rules['currency'] = 'required|string|in:' . $transferService->destination_currency;
+}
+
 // 4. Run the single, consolidated validation
 $request->validate($rules);
 
@@ -171,8 +215,16 @@ $sender = Auth::user();
 $sender->refresh();
 // ... (The amount calculation and rest of the function should follow here)
 
-        $amount = (float) $request->amount;
-        $serviceType = $request->service_type;
+$amount = (float) $request->amount;
+// Determine service type: if a transfer service is used for Card/Bank, it's a special type.
+// Otherwise, fall back to the form field.
+// Map payout services to an existing valid enum value
+if ($transferService && in_array($transferService->destination_type, ['card', 'bank'])) {
+    $serviceType = 'wallet_to_wallet'; // or another valid ENUM type
+} else {
+    $serviceType = $request->service_type; 
+}
+
 
         // Get transfer service if selected
 $transferService = null;
@@ -245,7 +297,7 @@ if ($transferService) {
         }
 
         // Agent validation for transfer_via_agent
-        if ($serviceType === 'transfer_via_agent') {
+        if ($serviceType === 'transfer_via_agent' && !$transferService) {
             $request->validate(['agent_id' => 'required|exists:users,id']);
             $selectedAgent = User::findOrFail($request->agent_id);
             
@@ -254,22 +306,70 @@ if ($transferService) {
             }
         }
 
-        // Determine receiver
-        if ($request->search_type === 'email') {
-            $request->validate(['email' => 'required|email|exists:users,email']);
-            $receiver = User::where('email', $request->email)->first();
-        } else {
-            $request->validate(['phone' => 'required|exists:users,phone']);
-            $receiver = User::where('phone', $request->phone)->first();
-        }
+// TransferController.php - Replace the block above with this:
 
-        if (!$receiver) {
-            return back()->withInput()->withErrors(['error' => 'Receiver not found.']);
-        }
+// Determine receiver
+// Determine receiver
+$receiver = null;
+$isCardOrBankPayout = $transferService && in_array($transferService->destination_type, ['card', 'bank']);
 
-        if ($receiver->id === $sender->id) {
-            return back()->withInput()->withErrors(['error' => 'You cannot send money to yourself.']);
+if (!$isCardOrBankPayout) {
+    // --- STANDARD WALLET-TO-WALLET TRANSFER ---
+    // Search by email or phone as provided by the user (which is required if it's not a payout)
+    if ($request->search_type === 'email') {
+        $receiver = User::where('email', $request->email)->first();
+    } else {
+        $receiver = User::where('phone', $request->phone)->first();
+    }
+    
+    // If receiver is not found for a standard transfer, it's a genuine error.
+    if (!$receiver) {
+        return back()->withInput()->withErrors(['error' => 'Receiver not found.']);
+    }
+
+} else {
+    // --- CARD/BANK PAYOUT SERVICE ---
+    // The recipient is the person who owns the card/bank account, not necessarily an existing user in the system.
+    
+    // 1. Try to find the user who already owns this card/bank account (if previously saved)
+    if ($destinationType === 'card' && $request->filled('card_number')) {
+        $card = FakeCard::where('card_number', $request->card_number)->first();
+        if ($card) {
+            $receiver = User::find($card->user_id);
         }
+    } elseif ($destinationType === 'bank' && $request->filled('account_number')) {
+        $bank = FakeBankAccount::where('account_number', $request->account_number)->first();
+        if ($bank) {
+            $receiver = User::find($bank->user_id);
+        }
+    }
+
+    // 2. If no existing user is found, create a placeholder 'system' user 
+    // to link the new FakeCard/FakeBankAccount to in the next step.
+    if (!$receiver) {
+        $receiverName = $request->cardholder_name ?? $request->account_holder_name ?? 'Transfer Recipient';
+        
+        // Generate a unique identifier (hash of card/account number) for the placeholder user's email
+        $identifier = $request->card_number ?? $request->account_number ?? 'temp' . time(); 
+        $uniqueEmail = 'payout_' . md5($identifier) . '@system.com';
+
+        // Find or create the recipient user
+        $receiver = User::firstOrCreate(
+            ['email' => $uniqueEmail],
+            [
+                'name' => $receiverName,
+                'password' => \Hash::make(\Str::random(12)), 
+                'role' => 'recipient', 
+                'status' => 'active', 
+                'phone' => null, 
+            ]
+        );
+    }
+}
+
+if ($receiver->id === $sender->id) {
+    return back()->withInput()->withErrors(['error' => 'You cannot send money to yourself.']);
+}
 
         // Payment method validation and balance checks
         $paymentMethod = null;
