@@ -8,6 +8,9 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
+use Carbon\Carbon;
+use App\Models\Otp;
+use Illuminate\Support\Facades\Mail;
 
 class AuthenticatedSessionController extends Controller
 {
@@ -38,19 +41,29 @@ class AuthenticatedSessionController extends Controller
         
         return redirect()->route('login')->with('error', 'Your account has been banned. Please contact support for assistance.');
     }
+    // $code = rand(100000, 999999);
+    $code = 111111 ; 
+    $expires = Carbon::now()->addMinutes(5);
 
-    // Redirect based on role
-    if ($user->hasRole('Admin')) {
-        return redirect()->route('admin.dashboard');
-    }
+    Otp::updateOrCreate(
+        ['user_id' => $user->id],
+        ['code' => $code, 'expires_at' => $expires]
+    );
 
-    if ($user->hasRole('Agent')) {
-        return redirect()->route('agent.dashboard');
-    }
+    // Send OTP via Azure SMTP
+    // Mail::raw("Your login OTP is: $code", function($message) use ($user) {
+    //     $message->to($user->email)
+    //             ->subject("Your Login OTP");
+    // });
 
-    if ($user->hasRole('User')) {
-        return redirect()->route('user.dashboard');
-    }
+    // Log out temporarily
+    Auth::logout();
+
+    // Store user ID in session for OTP verification
+    $request->session()->put('otp_user_id', $user->id);
+
+    return redirect()->route('otp.form');
+
     }
 
     /**
