@@ -364,7 +364,9 @@ public function send(Request $request)
     $transaction = Transaction::create([
         'sender_id' => $sender->id,
         // Set receiver_id to null for non-user transactions (cash pickup/agent transfer)
-        'receiver_id' => $receiver?->id, 
+        'receiver_id' => $receiver?->id,
+        'recipient_name' => $request->recipient_name, // e.g., from the form body
+    'recipient_phone' => $request->phone, 
         'amount' => $destinationAmount,
         'amount_usd' => $amountInUsd,
         'currency' => $transactionCurrency,
@@ -520,6 +522,8 @@ public function send(Request $request)
             'sender_id' => $sender->id,
             // $receiver is NULL for card/bank payouts, ID for wallet-to-wallet
             'receiver_id' => $receiver?->id, 
+            'recipient_name' => $request->recipient_name, 
+    'recipient_phone' => $request->phone,
             'amount' => $amount,
             'amount_usd' => $amountInUsd,
             'currency' => $transactionCurrency,
@@ -562,6 +566,8 @@ public function send(Request $request)
             'sender_id' => $sender->id,
             // Set receiver_id to null for non-user transactions
             'receiver_id' => $receiver?->id, 
+            'recipient_name' => $request->recipient_name, 
+    'recipient_phone' => $request->phone,
             'amount' => $destinationAmount,
             'currency' => $transactionCurrency,
             'status' => $status,

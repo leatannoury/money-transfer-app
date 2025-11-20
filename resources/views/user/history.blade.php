@@ -125,9 +125,15 @@
               <!-- Details -->
               <div class="flex-1">
                 @if($isOutgoing)
-                  <p class="font-semibold text-gray-900 dark:text-gray-100">Sent to {{ $txn->receiver->name ?? 'Unknown' }}</p>
+                  <p class="font-semibold text-gray-900 dark:text-gray-100">
+                    Sent to 
+                    {{-- Check for recipient_name if receiver is null --}}
+                    {{ $txn->receiver->name ?? $txn->recipient_name ?? 'Unknown' }} 
+                  </p>
                 @else
-                  <p class="font-semibold text-gray-900 dark:text-gray-100">Received from {{ $txn->sender->name ?? 'Unknown' }}</p>
+                  <p class="font-semibold text-gray-900 dark:text-gray-100">
+                    Received from {{ $txn->sender->name ?? 'Unknown' }}
+                  </p>
                 @endif
                 <p class="text-sm text-gray-500 dark:text-gray-400">{{ $txn->created_at->format('M d, Y H:i') }}</p>
               </div>
