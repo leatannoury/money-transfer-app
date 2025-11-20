@@ -31,13 +31,13 @@
 
                 <!-- Social Registration Buttons -->
                 <div class="flex flex-col gap-3 mb-6">
-                    <a href="{{ url('/auth/google') }}" 
+                    <a href="{{ url('/auth/google') }}?mode=register"
                         class="flex items-center justify-center gap-2 bg-white border border-gray-300 rounded-lg shadow-md px-6 py-2 text-sm font-medium text-gray-800 hover:bg-gray-200 transition">
                         <i class="fab fa-google fa-lg"></i>
                         Continue with Google
                     </a>
 
-                    <a href="{{ url('/auth/facebook') }}" 
+                    <a href="{{ url('/auth/facebook') }}?mode=register"
                         class="flex items-center justify-center gap-2 bg-blue-600 text-white rounded-lg shadow-md px-6 py-2 text-sm font-medium hover:bg-blue-700 transition">
                         <i class="fab fa-facebook fa-lg"></i>
                         Continue with Facebook

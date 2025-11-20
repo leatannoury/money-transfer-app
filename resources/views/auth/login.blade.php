@@ -29,20 +29,20 @@
                     <p class="text-gray-500 mt-1">Sign in to your account</p>
                 </div>
 
-                <!-- Social Login Buttons -->
-                <div class="flex flex-col gap-3 mb-6">
-                    <a href="{{ url('/auth/google') }}" 
-                        class="flex items-center justify-center gap-2 bg-white border border-gray-300 rounded-lg shadow-md px-6 py-2 text-sm font-medium text-gray-800 hover:bg-gray-200 transition">
-                        <i class="fab fa-google fa-lg"></i>
-                        Continue with Google
-                    </a>
-
-                    <a href="{{ url('/auth/facebook') }}" 
-                        class="flex items-center justify-center gap-2 bg-blue-600 text-white rounded-lg shadow-md px-6 py-2 text-sm font-medium hover:bg-blue-700 transition">
-                        <i class="fab fa-facebook fa-lg"></i>
-                        Continue with Facebook
-                    </a>
-                </div>
+    <!-- Social Login Buttons -->
+    <div class="mb-6 text-center">
+        <p class="text-sm text-gray-500 mb-2">Log in with</p>
+        <div class="flex justify-center space-x-3">
+            <a href="{{ url('/auth/google') }}?mode=login"
+               class="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded">
+                Google
+            </a>
+            <a href="{{ url('/auth/facebook') }}?mode=login"
+               class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded">
+                Facebook
+            </a>
+        </div>
+    </div>
 
                 <!-- Divider -->
                 <div class="flex items-center my-6">
