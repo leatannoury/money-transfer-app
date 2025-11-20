@@ -439,7 +439,11 @@ public function send(Request $request)
         $transaction = Transaction::create([
             'sender_id' => $sender->id,
             'receiver_id' => $receiver?->id,
-            'recipient_name' => $request->recipient_name ?? null,
+            'recipient_name' => $request->recipient_name 
+    ?? $request->cardholder_name 
+    ?? $request->account_holder_name 
+    ?? null,
+
             'recipient_phone' => $request->phone ?? null,
             'provider_id' => null,
             'amount' => $destinationAmount,
@@ -578,7 +582,11 @@ public function send(Request $request)
         $transaction = Transaction::create([
             'sender_id' => $sender->id,
             'receiver_id' => $receiver?->id,
-            'recipient_name' => $request->recipient_name ?? null,
+            'recipient_name' => $request->recipient_name 
+    ?? $request->cardholder_name 
+    ?? $request->account_holder_name 
+    ?? null,
+
             'recipient_phone' => $request->phone ?? null,
             'amount' => $amount,
             'amount_usd' => $amountInUsd,
@@ -590,7 +598,11 @@ public function send(Request $request)
             'fee_percent' => $adminCommission,
             'fee_amount_usd' => $feeInUsd,
             'transfer_service_id' => $transferService?->id,
-            'recipient_name' => $request->recipient_name ?? null,
+            'recipient_name' => $request->recipient_name 
+    ?? $request->cardholder_name 
+    ?? $request->account_holder_name 
+    ?? null,
+
             'recipient_card_number' => $request->card_number ?? null,
             'recipient_account_number' => $request->account_number ?? null,
         ]);
