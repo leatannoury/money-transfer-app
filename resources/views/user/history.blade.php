@@ -135,6 +135,7 @@
                     Received from {{ $txn->sender->name ?? 'Unknown' }}
                   </p>
                 @endif
+                
                 <p class="text-sm text-gray-500 dark:text-gray-400">{{ $txn->created_at->format('M d, Y H:i') }}</p>
               </div>
 

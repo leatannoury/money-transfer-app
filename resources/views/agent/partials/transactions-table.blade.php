@@ -50,7 +50,14 @@
 
                 {{-- Sender / Receiver --}}
                 <td class="px-6 py-3">{{ $tx->sender->name ?? 'N/A' }}</td>
-                <td class="px-6 py-3">{{ $tx->receiver->name ?? 'N/A' }}</td>
+                <td class="px-6 py-3">
+    @if(in_array($tx->service_type, ['cash_pickup', 'deposit_to_person']))
+        {{ $tx->recipient_name ?? 'N/A' }}
+    @else
+        {{ $tx->receiver->name ?? 'N/A' }}
+    @endif
+</td>
+
 
                 {{-- Amount --}}
                 <td class="px-6 py-3 font-semibold">

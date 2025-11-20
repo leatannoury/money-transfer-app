@@ -156,11 +156,12 @@ public function send(Request $request)
         'card_id' => 'nullable|exists:payment_methods,id',
         'bank_id' => 'nullable|exists:payment_methods,id',
         'transfer_service_id' => 'nullable|exists:transfer_services,id',
-        'service_type' => [
-            'required', 
-            'string', 
-            'in:user_transfer,agent_transfer,cash_pickup,bank_transfer,card_transfer,wallet_to_wallet'
-        ],
+'service_type' => [
+    'required',
+    'string',
+    'in:user_transfer,agent_transfer,transfer_via_agent,cash_pickup,bank_transfer,card_transfer,wallet_to_wallet'
+],
+
     ];
 
     // Add conditional validation based on service type
