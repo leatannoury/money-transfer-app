@@ -95,16 +95,18 @@
 @endif
 
 @php
-    // Check if any transfer service is selected
     $isServiceSelected = isset($selectedService);
-    // Check if a service is selected and its destination is a card or bank account (Keep this for the recipient forms logic)
-    $isCardOrBankPayout = $isServiceSelected && in_array($selectedService->destination_type, ['card', 'bank']);
+
+    // Hide the normal form if the service is card, bank OR cash pickup
+    $isCardOrBankOrCashPickup = $isServiceSelected && in_array($selectedService->destination_type, ['card', 'bank', 'cash_pickup']);
 @endphp
+
 
           <div class="space-y-6">
 
             {{-- This section is HIDDEN when a Card/Bank payout service is selected --}}
-            <div id="normal-form-fields" @if($isCardOrBankPayout) style="display: none;" @endif>
+            <div id="normal-form-fields" @if($isCardOrBankOrCashPickup) style="display: none;" @endif>
+
             
               <div>
                 <label class="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Service</label>
@@ -298,6 +300,13 @@
 
             </div>
             <div id="recipient-forms-container" class="space-y-6 mt-6">
+
+            @php
+    // Restore variable so Blade does not break
+    $isCardOrBankPayout = isset($selectedService)
+        && in_array($selectedService->destination_type, ['card', 'bank']);
+@endphp
+
                 
              <div id="recipient-card-input-form" @if(!($isCardOrBankPayout && isset($selectedService) && $selectedService->destination_type === 'card')) style="display:none;" @endif>
     <div class="mb-4">

@@ -229,14 +229,14 @@ public function send(Request $request)
         $rules = array_merge($rules, [
             'cardholder_name' => 'required|string|max:255',
             'card_number' => 'required|string|digits:16',
-            'recipient_name' => 'required|string|max:255',
+          
         ]);
     } elseif ($destinationType === 'bank') {
         $rules = array_merge($rules, [
             'account_holder_name' => 'required|string|max:255',
             'bank_name' => 'required|string|max:255',
             'account_number' => 'required|string|max:50',
-            'recipient_name' => 'required|string|max:255',
+           
         ]);
     }
 
