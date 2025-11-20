@@ -189,15 +189,14 @@ if ($destinationType === 'card') {
     $rules = array_merge($rules, [
         'cardholder_name' => 'required|string|max:255',
         'card_number' => 'required|string|digits:16',
-        'expiry_date' => 'required|string|date_format:m/y',
-        'cvv' => 'required|string|digits:3|max:4',
+
     ]);
 } elseif ($destinationType === 'bank') {
     $rules = array_merge($rules, [
         'account_holder_name' => 'required|string|max:255',
         'bank_name' => 'required|string|max:255',
         'account_number' => 'required|string|max:50',
-        'routing_iban' => 'required|string|max:50',
+
     ]);
 }
 
@@ -240,15 +239,14 @@ if ($transferService) {
         $request->validate([
             'cardholder_name' => 'required|string|max:255',
             'card_number' => 'required|string|digits:16',
-            'expiry_date' => 'required|string|date_format:m/y',
-            'cvv' => 'required|string|max:4',
+
         ]);
     } elseif ($transferService->destination_type === 'bank') {
         $request->validate([
             'account_holder_name' => 'required|string|max:255',
             'bank_name' => 'required|string|max:255',
             'account_number' => 'required|string|max:50',
-            'routing_iban' => 'required|string|max:50',
+
         ]);
     }
 }
@@ -380,19 +378,7 @@ if ($receiver->id === $sender->id) {
         $recipientCard = null;
         $recipientBank = null;
 
-        // If a transfer service is used, check for required recipient details
-        // if ($transferService && $transferService->destination_type !== 'wallet') {
-        //     if ($transferService->destination_type === 'card') {
-        //         $request->validate(['recipient_card_id' => 'required|exists:fake_cards,id']);
-        //         $recipientCard = FakeCard::find($request->recipient_card_id);
-        //     } elseif ($transferService->destination_type === 'bank') {
-        //         $request->validate(['recipient_bank_id' => 'required|exists:fake_bank_accounts,id']);
-        //         $recipientBank = FakeBankAccount::find($request->recipient_bank_id);
-        //     }
-        // }
 
-        $recipientCard = null;
-        $recipientBank = null;
 
         // If a transfer service is used, process the new card/bank details
         if ($transferService) {
@@ -406,8 +392,7 @@ if ($receiver->id === $sender->id) {
                         'user_id' => $receiver->id, // Assign to the receiver
                         'nickname' => $request->recipient_card_nickname ?? 'New Card',
                         'cardholder_name' => $request->cardholder_name,
-                        'expiry_date' => $request->expiry_date,
-                        'cvv' => $request->cvv,
+
                         'balance' => 0.00, // Initialize balance if new
                     ]
                 );
@@ -422,7 +407,7 @@ if ($receiver->id === $sender->id) {
                         'nickname' => $request->recipient_bank_nickname ?? 'New Bank Account',
                         'account_holder_name' => $request->account_holder_name,
                         'bank_name' => $request->bank_name,
-                        'routing_iban' => $request->routing_iban,
+
                         'balance' => 0.00, // Initialize balance if new
                     ]
                 );

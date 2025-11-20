@@ -272,18 +272,7 @@
         <input type="text" name="card_number" id="card_number" value="{{ old('card_number') }}" class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800 focus:ring-2 focus:ring-primary text-gray-900 dark:text-white" placeholder="16 Digits" pattern="\d{16}" maxlength="16" />
         @error('card_number')<p class="text-sm text-red-500 mt-1">{{ $message }}</p>@enderror
     </div>
-    <div class="flex gap-4">
-        <div class="flex-1 mb-4">
-            <label for="expiry_date" class="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Expiry Date (MM/YY) <span class="text-red-500">*</span></label>
-            <input type="text" name="expiry_date" id="expiry_date" value="{{ old('expiry_date') }}" class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800 focus:ring-2 focus:ring-primary text-gray-900 dark:text-white" placeholder="MM/YY" pattern="(0[1-9]|1[0-2])\/([0-9]{2})" />
-            @error('expiry_date')<p class="text-sm text-red-500 mt-1">{{ $message }}</p>@enderror
-        </div>
-        <div class="flex-1 mb-4">
-            <label for="cvv" class="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">CVV <span class="text-red-500">*</span></label>
-            <input type="text" name="cvv" id="cvv" value="{{ old('cvv') }}" class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800 focus:ring-2 focus:ring-primary text-gray-900 dark:text-white" placeholder="3 or 4 Digits" pattern="\d{3,4}" maxlength="4" />
-            @error('cvv')<p class="text-sm text-red-500 mt-1">{{ $message }}</p>@enderror
-        </div>
-    </div>
+    
 </div>
 
     <div id="recipient-bank-input-form" @if(!($isCardOrBankPayout && isset($selectedService) && $selectedService->destination_type === 'bank')) style="display:none;" @endif>
@@ -302,11 +291,7 @@
         <input type="text" name="account_number" id="account_number" value="{{ old('account_number') }}" class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800 focus:ring-2 focus:ring-primary text-gray-900 dark:text-white" />
         @error('account_number')<p class="text-sm text-red-500 mt-1">{{ $message }}</p>@enderror
     </div>
-    <div class="mb-4">
-        <label for="routing_iban" class="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Routing / IBAN <span class="text-red-500">*</span></label>
-        <input type="text" name="routing_iban" id="routing_iban" value="{{ old('routing_iban') }}" class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800 focus:ring-2 focus:ring-primary text-gray-900 dark:text-white" />
-        @error('routing_iban')<p class="text-sm text-red-500 mt-1">{{ $message }}</p>@enderror
-    </div>
+
 </div>
 
 
