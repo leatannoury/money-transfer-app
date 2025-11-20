@@ -204,9 +204,12 @@ private $fallbackCurrencyMap = [
     'Zimbabwe' => 'ZWL',
 ];
 
-// In TransferServiceSeeder.php
-
-// In TransferServiceSeeder.php
+private $destinationTypes = [
+    'wallet' => 'Wallet Transfer',
+    'card' => 'Card Transfer',
+    'bank' => 'Bank Transfer',
+    'cash_pickup' => 'Cash Pickup',
+];
 
 private function getBaseFallbackRate(string $currency): float
 {
@@ -250,20 +253,21 @@ private function getBaseFallbackRate(string $currency): float
         foreach ($countries as $country) {
 
             $destinationCurrency = $this->getCurrencyForCountry($country);
-
-           // In TransferServiceSeeder.php
+            $baseRate = $this->getBaseFallbackRate($destinationCurrency);
 
             if ($country === 'Lebanon') {
-
+                // Lebanon only has a 'wallet' destination type
+                $destinationType = 'wallet';
+                
                 $services[] = [
                     'id' => $id++,
-                    'name' => 'Local Wallet Transfer',
-                    'source_type' => 'wallet',
-                    'destination_type' => 'wallet',
+                    'name' => 'Local Wallet Transfer', // Unique name for this service
+                    // Source Type is no longer relevant for the unique service, set to null or a placeholder
+                    'source_type' => null, 
+                    'destination_type' => $destinationType,
                     'destination_country' => 'Lebanon',
                     'speed' => 'instant',
                     'fee' => 0.50,
-                    // FIX: Change 1.00 to the desired market/official LBP rate (e.g., 89500)
                     'exchange_rate' => 89500.0, 
                     'promotion_active' => true,
                     'promotion_text' => 'First transfer free for local wallet.',
@@ -271,34 +275,25 @@ private function getBaseFallbackRate(string $currency): float
                 ];
 
             } else {
-// ... rest of the code
+                // All other countries have Card, Bank, and Cash Pickup destinations
+                foreach ($this->destinationTypes as $destinationType => $nameSuffix) {
+                    
+                    // Skip 'wallet' for non-Lebanon destinations
+                    if ($destinationType === 'wallet') {
+                        continue;
+                    }
 
-                // Define combinations
-                $combinations = [
-                    ['source' => 'wallet', 'destination' => 'card', 'name' => 'Wallet to Card'],
-                    ['source' => 'wallet', 'destination' => 'bank', 'name' => 'Wallet to Bank'],
-                    ['source' => 'wallet', 'destination' => 'cash_pickup', 'name' => 'Wallet to Cash Pickup'],
-
-                    ['source' => 'card', 'destination' => 'card', 'name' => 'Card to Card'],
-                    ['source' => 'card', 'destination' => 'bank', 'name' => 'Card to Bank'],
-                    ['source' => 'card', 'destination' => 'cash_pickup', 'name' => 'Card to Cash Pickup'],
-
-                    ['source' => 'bank', 'destination' => 'bank', 'name' => 'Bank to Bank'],
-                    ['source' => 'bank', 'destination' => 'card', 'name' => 'Bank to Card'],
-                    ['source' => 'bank', 'destination' => 'cash_pickup', 'name' => 'Bank to Cash Pickup'],
-                ];
-
-                foreach ($combinations as $combo) {
-
-                    $baseRate = $this->getBaseFallbackRate($destinationCurrency);
                     $variance = mt_rand(-50, 50) / 10000;
                     $rate = round($baseRate * (1 + $variance), 4);
+                    
+                    // The service name is now just based on the destination method
+                    $serviceName = $nameSuffix; 
 
                     $services[] = [
                         'id' => $id++,
-                        'name' => $combo['name'],
-                        'source_type' => $combo['source'],
-                        'destination_type' => $combo['destination'],
+                        'name' => $serviceName,
+                        'source_type' => null, // Source Type is no longer relevant for the unique service
+                        'destination_type' => $destinationType,
                         'destination_country' => $country,
                         'speed' => 'instant',
                         'fee' => mt_rand(500, 2000) / 100,
@@ -315,12 +310,14 @@ private function getBaseFallbackRate(string $currency): float
         foreach ($services as $s) {
             DB::table('transfer_services')->updateOrInsert(
                 [
+                    // Use a combination of name, destination type, and country as the unique key
                     'name' => $s['name'],
-                    'source_type' => $s['source_type'],
                     'destination_type' => $s['destination_type'],
                     'destination_country' => $s['destination_country'],
+                    // source_type is no longer needed in the unique key
                 ],
                 [
+                    'source_type' => $s['source_type'], // Keep null/placeholder in the DB record
                     'speed' => $s['speed'],
                     'fee' => $s['fee'],
                     'exchange_rate' => $s['exchange_rate'],
@@ -337,7 +334,7 @@ private function getBaseFallbackRate(string $currency): float
 
     private function getCurrencyForCountry(string $countryName): string
     {
-        // You had $this->countryMap but it's missing; remove it:
+        
         return $this->fallbackCurrencyMap[$countryName] ?? 'USD';
     }
 }

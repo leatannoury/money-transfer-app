@@ -393,27 +393,16 @@
     <select 
       name="payment_method" 
       id="payment_method"
-      required
-      {{ isset($selectedService) ? 'disabled' : '' }}
-      class="w-full pl-10 pr-4 py-2.5 border border-gray-300 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800 focus:ring-2 focus:ring-primary text-gray-900 dark:text-white
-      {{ isset($selectedService) ? 'opacity-60 cursor-not-allowed' : '' }}"
-       {{ $defaultPaymentMethod ? 'disabled' : '' }}>
-       @if ($defaultPaymentMethod)
-        {{-- Pre-select the method required by the selected service --}}
-        <option value="{{ $defaultPaymentMethod }}" selected>
-            @if ($defaultPaymentMethod === 'wallet')
-                My Wallet Balance (Source)
-            @elseif ($defaultPaymentMethod === 'credit_card')
-                Credit/Debit Card (Source)
-            @elseif ($defaultPaymentMethod === 'bank_account')
-                Bank Account (Source)
-            @endif
-        </option>
-    @else
-      <option value="wallet" {{ $defaultPaymentMethod === 'wallet' ? 'selected' : '' }} {{ old('payment_method') == 'wallet' ? 'selected' : '' }}>App Wallet</option>
-      <option value="credit_card" {{ $defaultPaymentMethod === 'credit_card' ? 'selected' : '' }} {{ old('payment_method') == 'credit_card' ? 'selected' : '' }}>Saved Credit Card</option>
-      <option value="bank_account" {{ $defaultPaymentMethod === 'bank_account' ? 'selected' : '' }} {{ old('payment_method') == 'bank_account' ? 'selected' : '' }}>Saved Bank Account</option>
-    @endif
+      required  
+      class="w-full pl-10 pr-4 py-2.5 border border-gray-300 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800 focus:ring-2 focus:ring-primary text-gray-900 dark:text-white">
+{{-- Wallet should always be an option (with Lebanon specific logic if needed, but not here) --}}
+        <option value="wallet" @selected(old('payment_method', 'wallet') === 'wallet')>Wallet</option>
+
+        {{-- Saved Credit Cards should always be an option --}}
+        <option value="credit_card" @selected(old('payment_method') === 'credit_card')>Saved Credit Card</option>
+
+        {{-- Saved Bank Accounts should always be an option --}}
+        <option value="bank_account" @selected(old('payment_method') === 'bank_account')>Saved Bank Account</option>
     </select>
 @if(isset($selectedService) && $defaultPaymentMethod)
       <input type="hidden" name="payment_method" value="{{ $defaultPaymentMethod }}">

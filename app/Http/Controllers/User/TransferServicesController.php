@@ -17,12 +17,14 @@ use App\Models\TransferService;
 
 class TransferServicesController extends Controller
 {
+
+
 public function index(Request $request)
 {
     // Get filtered services
     $query = TransferService::query();
 
- if ($request->destination) {
+    if ($request->destination) {
         $query->where('destination_country', $request->destination);
     }
 
@@ -30,25 +32,36 @@ public function index(Request $request)
         $query->where('destination_type', $request->payout_method);
     }
 
-    // NEW: Filter by Source Type (Sender's Payment Source)
-    if ($request->source_type && $request->source_type !== 'any') {
-        $query->where('source_type', $request->source_type);
-    } // <--- ADD THIS BLOCK
+
 
     if ($request->speed && $request->speed !== 'any') {
         $query->where('speed', $request->speed);
     }
 
-if ($request->fee_max !== null) {
-    $query->where('fee', '<=', $request->fee_max);
-}
-
+    if ($request->fee_max !== null) {
+        $query->where('fee', '<=', $request->fee_max);
+    }
 
     if ($request->promotions === "1") {
         $query->where('promotion_active', true);
     }
 
-$services = $query->get();
+    // NEW LOGIC: Get all services, then group by destination country and type.
+    // Order by fee ascending to select the cheapest service as the representative.
+    $allServices = $query
+        ->orderBy('fee', 'asc')
+        ->get();
+
+    // Group services by destination country and destination type, and take the first (cheapest) of each group.
+    $services = $allServices
+        ->groupBy(function ($service) {
+            return $service->destination_country . '|' . $service->destination_type;
+        })
+        ->map(function ($group) {
+            return $group->first(); // Take the representative service (cheapest)
+        })
+        ->values();
+
 
     // Get dynamic options
     $countries = TransferService::select('destination_country')
@@ -56,30 +69,25 @@ $services = $query->get();
         ->orderBy('destination_country')
         ->pluck('destination_country');
 
-   
-
     $payoutMethods = TransferService::select('destination_type')
         ->distinct()
         ->orderBy('destination_type')
         ->pluck('destination_type');
 
-    // NEW: Get dynamic Source Types
-    $sourceTypes = TransferService::select('source_type')
-        ->distinct()
-        ->orderBy('source_type')
-        ->pluck('source_type');
+
 
     $speeds = TransferService::select('speed')
         ->distinct()
         ->orderBy('speed')
         ->pluck('speed');
 
+    // Make sure 'sourceTypes' is removed from the compact call
     return view('user.transfer-services', compact(
-        'services', 
-        'countries', 
-        'payoutMethods', 
-        'sourceTypes',
-        'speeds'
+        'services',
+        'countries',
+        'payoutMethods',
+        'speeds',
+        'request'
     ));
 }
 

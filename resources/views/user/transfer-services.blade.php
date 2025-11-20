@@ -66,23 +66,7 @@
         </select>
     </div>
 
-    <div class="flex-1 min-w-[200px]">
-    <label for="source_type" class="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-        Sender Source
-    </label>
-   <select name="source_type" id="source_type" class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800 focus:ring-2 focus:ring-primary text-gray-900 dark:text-white"
-        onchange="this.form.submit()">
-         
-    <option value="any">Any Source</option>
-        @foreach($sourceTypes as $sourceType)
-            <option 
-                value="{{ $sourceType }}" 
-                {{ request('source_type') == $sourceType ? 'selected' : '' }}>
-                {{ ucfirst($sourceType) }}
-            </option>
-        @endforeach
-    </select>
-</div>
+   
 
             <!-- Payout Method -->
 <div class="flex-1 min-w-[200px]">
@@ -175,7 +159,7 @@
 
     <div class="col-span-2 lg:col-span-1">
         <p class="text-xs text-gray-500">Service</p>
-        <p class="font-semibold">{{ $service->name }}</p>
+        <p class="font-semibold">{{ ucfirst($service->destination_type) }} Payout</p>
     </div>
 
     <div>
