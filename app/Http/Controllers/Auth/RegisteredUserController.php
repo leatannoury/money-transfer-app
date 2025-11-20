@@ -11,6 +11,9 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules;
 use Illuminate\View\View;
+use Carbon\Carbon;
+use App\Models\Otp;
+use Illuminate\Support\Facades\Mail;
 
 class RegisteredUserController extends Controller
 {
@@ -50,8 +53,25 @@ class RegisteredUserController extends Controller
 
         event(new Registered($user));
 
-        Auth::login($user);
+       $code = '111111'; // fixed OTP for testing
+        $expires = Carbon::now()->addMinutes(5);
 
-        return redirect(route('user.dashboard', absolute: false));
+        Otp::updateOrCreate(
+            ['user_id' => $user->id],
+            ['code' => $code, 'expires_at' => $expires]
+        );
+
+        // Skip sending email for now
+        // Mail::raw("Your registration OTP is: $code", function($message) use ($user) {
+        //     $message->to($user->email)
+        //             ->subject("Your Registration OTP");
+        // });
+
+        // Store user ID in session for OTP verification
+        $request->session()->put('otp_user_id', $user->id);
+
+        // Redirect to OTP page
+        return redirect()->route('otp.form')->with('success', 'Enter the OTP to complete registration.');
+    
     }
 }
