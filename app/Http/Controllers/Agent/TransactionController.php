@@ -16,24 +16,45 @@ class TransactionController extends Controller
     /**
      * Show all transactions assigned to this agent or pending ones
      */
-    public function index()
-    {
-        $agent = Auth::user();
+public function index()
+{
+    $agent = Auth::user();
 
-        $transactions = Transaction::with(['sender', 'receiver']) // 👈 add this
-            ->where(function($query) use ($agent) {
-                $query->where('status', 'pending_agent')
-                      ->orWhere('agent_id', $agent->id);
-            })
-            ->orderBy('created_at', 'desc')
-            ->get();
+    // Mark notifications read
+    $agent->agentNotifications()
+        ->where('is_read', false)
+        ->update(['is_read' => true]);
 
-        $agent->agentNotifications()
-            ->where('is_read', false)
-            ->update(['is_read' => true]);
+    // 1) User ↔ User transfers (anything that is NOT cash_in / cash_out)
+    $userTransfers = Transaction::with(['sender', 'receiver'])
+        ->where('agent_id', $agent->id)
+        ->whereNotIn('service_type', ['cash_in', 'cash_out'])
+        ->orderBy('created_at', 'desc')
+        ->paginate(10, ['*'], 'transfers_page');
 
-        return view('agent.transactions', compact('transactions', 'agent'));
-    }
+    // 2) Cash-In
+    $cashIns = Transaction::with(['sender', 'receiver'])
+        ->where('agent_id', $agent->id)
+        ->where('service_type', 'cash_in')
+        ->orderBy('created_at', 'desc')
+        ->paginate(10, ['*'], 'cash_in_page');
+
+    // 3) Cash-Out
+    $cashOuts = Transaction::with(['sender', 'receiver'])
+        ->where('agent_id', $agent->id)
+        ->where('service_type', 'cash_out')
+        ->orderBy('created_at', 'desc')
+        ->paginate(10, ['*'], 'cash_out_page');
+
+    return view('agent.transactions', compact(
+        'agent',
+        'userTransfers',
+        'cashIns',
+        'cashOuts'
+    ));
+}
+
+
 
     /**
      * Accept a pending transaction (assign to current agent)
