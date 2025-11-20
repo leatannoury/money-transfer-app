@@ -7,18 +7,25 @@ use Laravel\Socialite\Facades\Socialite;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
+use App\Models\Otp;
 
 class SocialAuthController extends Controller
 {
     // Redirect to provider
-    public function redirect(Request $request, $provider)
-    {
-        $mode = $request->query('mode', 'login');
-        session(['social_auth_mode' => $mode]);
+   public function redirect(Request $request, $provider)
+{
+    $mode = $request->query('mode', 'login');
+    session(['social_auth_mode' => $mode]);
 
-        return Socialite::driver($provider)->stateless()->redirect();
+    $driver = Socialite::driver($provider)->stateless();
+
+    
+    if ($provider === 'google') {
+        $driver = $driver->with(['prompt' => 'select_account']);
     }
 
+    return $driver->redirect();
+}
     // Handle callback from provider
    public function callback($provider)
 {
@@ -64,13 +71,22 @@ class SocialAuthController extends Controller
         if ($user->status === 'banned') {
             return redirect()->route('login')->with('error', 'Your account has been banned.');
         }
+        $code = 111111; // or rand(100000, 999999)
+        $expires = now()->addMinutes(5);
 
-        Auth::login($user, true);
-        request()->session()->regenerate();
+        Otp::updateOrCreate(
+            ['user_id' => $user->id],
+            ['code' => $code, 'expires_at' => $expires]
+        );
 
-        if ($user->hasRole('Admin')) return redirect()->route('admin.dashboard');
-        if ($user->hasRole('Agent')) return redirect()->route('agent.dashboard');
-        return redirect()->route('user.dashboard');
+        // Log out user after generating OTP
+        Auth::logout();
+
+        // Save user ID for OTP verification
+        session(['otp_user_id' => $user->id]);
+
+        // Redirect to OTP form (same as normal login)
+        return redirect()->route('otp.form');
 
     } catch (\Exception $e) {
     \Log::error('Social auth error: ' . $e->getMessage());
