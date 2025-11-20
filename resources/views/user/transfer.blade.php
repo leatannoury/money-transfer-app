@@ -104,7 +104,7 @@
           <div class="space-y-6">
 
             {{-- This section is HIDDEN when a Card/Bank payout service is selected --}}
-            <div id="normal-form-fields" @if($isServiceSelected) style="display: none;" @endif>
+            <div id="normal-form-fields" @if($isCardOrBankPayout) style="display: none;" @endif>
             
               <div>
                 <label class="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Service</label>
@@ -193,42 +193,42 @@
     </p>
 </div>
 
-              @if($beneficiaries->count() > 0)
-              <div>
-                <label class="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Select from Saved Beneficiaries</label>
-                <div class="relative">
-                  <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">people</span>
-                  <select 
-                    id="beneficiary-select"
-                    class="w-full pl-10 pr-4 py-2.5 border border-gray-300 dark:border-gray-700 
-                           rounded-lg bg-gray-50 dark:bg-gray-800 
-                           focus:ring-2 focus:ring-primary 
-                           text-gray-900 dark:text-white">
-                    <option value="">-- Select a beneficiary (optional) --</option>
-                    @foreach($beneficiaries as $beneficiary)
-                      @php
-                        $user = null;
-                        if ($beneficiary->phone_number) {
-                            $user = \App\Models\User::where('phone', $beneficiary->phone_number)->first();
-                        }
-                        $email = $user ? $user->email : '';
-                      @endphp
-                      <option 
-                        value="{{ $beneficiary->id }}"
-                        data-phone="{{ $beneficiary->phone_number ?? '' }}"
-                        data-email="{{ $email }}"
-                        data-name="{{ $beneficiary->full_name }}">
-                        {{ $beneficiary->full_name }} 
-                        @if($beneficiary->phone_number)
-                          ({{ $beneficiary->phone_number }})
-                        @endif
-                      </option>
-                    @endforeach
-                  </select>
-                </div>
-                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Select a saved beneficiary to auto-fill their information</p>
-              </div>
-              @endif
+
+{{-- ALWAYS show beneficiaries for wallet_to_wallet or transfer_via_agent --}}
+<div id="beneficiaries-wrapper" style="display:none;">
+    <label class="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
+        Select from Saved Beneficiaries
+    </label>
+
+    <div class="relative">
+        <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">people</span>
+        <select 
+            id="beneficiary-select"
+            class="w-full pl-10 pr-4 py-2.5 border border-gray-300 dark:border-gray-700 
+                   rounded-lg bg-gray-50 dark:bg-gray-800 
+                   focus:ring-2 focus:ring-primary 
+                   text-gray-900 dark:text-white">
+            <option value="">-- Select a beneficiary (optional) --</option>
+
+            @foreach($beneficiaries as $beneficiary)
+                <option 
+                    value="{{ $beneficiary->id }}"
+                    data-phone="{{ $beneficiary->phone_number ?? '' }}"
+                    data-name="{{ $beneficiary->full_name }}">
+                    {{ $beneficiary->full_name }}
+                </option>
+            @endforeach
+        </select>
+    </div>
+
+    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+        Select a saved beneficiary to auto-fill their information
+    </p>
+</div>
+
+
+
+
 
               <div class="flex items-center gap-6">
                 <label class="flex items-center gap-2 cursor-pointer">
@@ -355,7 +355,7 @@
             </label>
             <input type="text" id="recipient_name" name="recipient_name" 
                    value="{{ old('recipient_name') }}" required
-                   class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100">
+                   class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 ">
         </div>
 
         {{-- Recipient Phone --}}
@@ -363,9 +363,9 @@
             <label for="phone" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Recipient Phone Number <span class="text-red-500">*</span>
             </label>
-            <input type="tel" id="phone" name="phone" 
+            <input type="number" id="phone" name="phone" 
                    value="{{ old('phone') }}" required
-                   class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100">
+                   class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 ">
         </div>
 
         {{-- Provider Dropdown - Now Country-Specific --}}
@@ -782,6 +782,25 @@ const paymentMethodSelect = document.getElementById('payment_method');
 
   // Initialize on page load (this remains, as it sets the initial visibility)
   window.addEventListener('DOMContentLoaded', togglePaymentDropdowns);
+
+function toggleBeneficiaries() {
+    const serviceType = document.getElementById('service_type')?.value;
+    const beneDiv = document.getElementById('beneficiaries-wrapper');
+
+    if (!beneDiv) return;
+
+    if (serviceType === 'wallet_to_wallet' || serviceType === 'transfer_via_agent') {
+        beneDiv.style.display = 'block';
+    } else {
+        beneDiv.style.display = 'none';
+    }
+}
+
+// Fire on load
+window.addEventListener('DOMContentLoaded', toggleBeneficiaries);
+
+// Fire when user changes service
+document.getElementById('service_type')?.addEventListener('change', toggleBeneficiaries);
 
 </script>
 @if(session('msg'))
