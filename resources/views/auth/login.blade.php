@@ -1,4 +1,4 @@
-<x-guest-layout>
+ <x-guest-layout>
     <!-- Session Status -->
     <x-auth-session-status class="mb-4" :status="session('status')" />
 
@@ -13,11 +13,11 @@
     <div class="mb-6 text-center">
         <p class="text-sm text-gray-500 mb-2">Log in with</p>
         <div class="flex justify-center space-x-3">
-            <a href="{{ url('/auth/google') }}" 
+            <a href="{{ url('/auth/google') }}?mode=login" 
                class="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded">
                 Google
             </a>
-            <a href="{{ url('/auth/facebook') }}" 
+            <a href="{{ url('/auth/facebook') }}?mode=login" 
                class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded">
                 Facebook
             </a>

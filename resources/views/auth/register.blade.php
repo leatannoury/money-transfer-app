@@ -1,13 +1,14 @@
-<x-guest-layout>
+
+ <x-guest-layout>
     <!-- Social Login Buttons -->
     <div class="mb-6 text-center">
         <p class="text-sm text-gray-500 mb-2">Register with</p>
         <div class="flex justify-center space-x-3">
-            <a href="{{ url('/auth/google') }}" class="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded">
+            <a href="{{ url('/auth/google') }}?mode=register" class="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded">
                 Google
             </a>
           
-            <a href="{{ url('/auth/facebook') }}" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded">
+            <a href="{{ url('/auth/facebook') }}?mode=register" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded">
                 Facebook
             </a>
         </div>
