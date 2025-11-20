@@ -20,6 +20,7 @@ class Transaction extends Model
         'fee_amount_usd',
         'recipient_name', 
         'recipient_phone',
+        'provider_id',
     ];
 
     public function sender()

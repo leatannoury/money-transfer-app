@@ -74,10 +74,21 @@
 
 @if(isset($selectedService))
     <input type="hidden" name="transfer_service_id" value="{{ $selectedService->id }}">
-
+    
     {{-- FIX: Add a hidden field to ensure the service's locked currency is sent to the controller --}}
     <input type="hidden" name="currency" value="{{ $selectedService->destination_currency }}">
+    
+    {{-- ✅ NEW: Automatically set service_type based on selected service destination_type --}}
+    @if($selectedService->destination_type === 'cash_pickup')
+        <input type="hidden" name="service_type" value="cash_pickup">
+    @elseif(in_array($selectedService->destination_type, ['card', 'bank']))
+        <input type="hidden" name="service_type" value="wallet_to_wallet">
+    @else
+        <input type="hidden" name="service_type" value="wallet_to_wallet">
+    @endif
 @endif
+
+
           {{-- Add this line to pass the destination type to JS, preferably near the top of the form --}}
 @if ($selectedService)
 <input type="hidden" id="selected-service-destination" value="{{ $selectedService->destination_type }}">
@@ -322,7 +333,75 @@
 </div>
 
 
+{{-- resources/views/user/transfer.blade.php --}}
 
+@if ($selectedService)
+    {{-- 1. Pass the selected service ID --}}
+    <input type="hidden" name="transfer_service_id" value="{{ $selectedService->id }}">
+    
+@if ($selectedService && $selectedService->destination_type === 'cash_pickup')
+<input type="hidden" name="service_type" value="cash_pickup">
+
+    {{-- Cash Pickup Details Section --}}
+    <div id="cash-pickup-fields" class="space-y-6 mb-8 p-6 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+        <h3 class="text-xl font-semibold border-b pb-3 mb-4 text-gray-800 dark:text-gray-200">
+            Recipient Details & Provider
+        </h3>
+
+        {{-- Recipient Name --}}
+        <div>
+            <label for="recipient_name" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Recipient Full Name <span class="text-red-500">*</span>
+            </label>
+            <input type="text" id="recipient_name" name="recipient_name" 
+                   value="{{ old('recipient_name') }}" required
+                   class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100">
+        </div>
+
+        {{-- Recipient Phone --}}
+        <div>
+            <label for="phone" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Recipient Phone Number <span class="text-red-500">*</span>
+            </label>
+            <input type="tel" id="phone" name="phone" 
+                   value="{{ old('phone') }}" required
+                   class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100">
+        </div>
+
+        {{-- Provider Dropdown - Now Country-Specific --}}
+        <div>
+            <label for="provider_id" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Cash Pickup Provider <span class="text-red-500">*</span>
+            </label>
+            
+            @if($providers->count() > 0)
+                <select id="provider_id" name="provider_id" required
+                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100">
+                    <option value="" disabled selected>Select a Provider in {{ $selectedService->destination_country }}</option>
+                    @foreach ($providers as $provider)
+                        <option value="{{ $provider->id }}" {{ old('provider_id') == $provider->id ? 'selected' : '' }}>
+                            {{ $provider->name }}
+                        </option>
+                    @endforeach
+                </select>
+                <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                    Showing providers available in {{ $selectedService->destination_country }}
+                </p>
+            @else
+                <div class="mt-1 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-md">
+                    <p class="text-sm text-yellow-800 dark:text-yellow-200">
+                        ⚠️ No providers available for {{ $selectedService->destination_country }}. Please select a different destination or contact support.
+                    </p>
+                </div>
+                <input type="hidden" name="provider_id" value="">
+            @endif
+        </div>
+    </div>
+@endif
+
+@endif
+
+{{-- The main form part below this should only show the Amount/Currency/Payment Method and Submit --}}
 
 
             <div>
