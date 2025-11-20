@@ -84,14 +84,16 @@
 @endif
 
 @php
-    // Check if a service is selected and its destination is a card or bank account
-    $isCardOrBankPayout = isset($selectedService) && in_array($selectedService->destination_type, ['card', 'bank']);
+    // Check if any transfer service is selected
+    $isServiceSelected = isset($selectedService);
+    // Check if a service is selected and its destination is a card or bank account (Keep this for the recipient forms logic)
+    $isCardOrBankPayout = $isServiceSelected && in_array($selectedService->destination_type, ['card', 'bank']);
 @endphp
 
           <div class="space-y-6">
 
             {{-- This section is HIDDEN when a Card/Bank payout service is selected --}}
-            <div id="normal-form-fields" @if($isCardOrBankPayout) style="display: none;" @endif>
+            <div id="normal-form-fields" @if($isServiceSelected) style="display: none;" @endif>
             
               <div>
                 <label class="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Service</label>
@@ -107,11 +109,12 @@
                            text-gray-900 dark:text-white">
                     <option value="wallet_to_wallet" {{ old('service_type') == 'wallet_to_wallet' ? 'selected' : '' }}>Wallet to Wallet</option>
                     <option value="transfer_via_agent" {{ old('service_type') == 'transfer_via_agent' ? 'selected' : '' }}>Deposit or Transfer to Person</option>
+                  <option value="cash_pickup" {{ old('service_type') == 'cash_pickup' ? 'selected' : '' }}>Cash Pickup</option>
                   </select>
                 </div>
-                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  Wallet to Wallet: Direct transfer. Deposit/Transfer to Person: Requires agent approval.
-                </p>
+                  <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    Wallet to Wallet: Direct transfer. Deposit/Transfer to Person & Cash Pickup: Requires agent approval.
+                  </p>
               </div>
 
               <div id="agent-selection" style="display: none;">
@@ -154,6 +157,30 @@
                   </p>
                 @endif
               </div>
+
+
+              {{-- Add this after the agent selection section --}}
+<div id="recipient-name-field" style="display: none;">
+    <label class="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
+        Recipient Name <span class="text-red-500">*</span>
+    </label>
+    <div class="relative">
+        <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">person</span>
+        <input 
+            type="text" 
+            name="recipient_name" 
+            id="recipient-name-input"
+            placeholder="Enter recipient's full name"
+            value="{{ old('recipient_name') }}"
+            class="w-full pl-10 pr-4 py-2.5 border border-gray-300 dark:border-gray-700 
+                   rounded-lg bg-gray-50 dark:bg-gray-800 
+                   focus:ring-2 focus:ring-primary 
+                   text-gray-900 dark:text-white">
+    </div>
+    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+        Enter the name of the person who will collect the cash
+    </p>
+</div>
 
               @if($beneficiaries->count() > 0)
               <div>
@@ -467,7 +494,10 @@
   // Toggle between Email and Phone inputs
   document.querySelectorAll('input[name="search_type"]').forEach(radio => {
       radio.addEventListener('change', function() {
-          if (!isNormalFormVisible) return; // Exit if normal form is hidden
+          if (!isNormalFormVisible) return;
+          
+          const serviceType = document.getElementById('service_type')?.value;
+          if (serviceType === 'cash_pickup') return; // Don't toggle for cash pickup
 
           if (this.value === 'email') {
               document.getElementById('email-field').style.display = 'block';
@@ -479,26 +509,100 @@
       });
   });
 
-  // Toggle Agent Selection based on Service Type
+  // New function to handle cash pickup visibility
+  function toggleCashPickupFields() {
+      if (!isNormalFormVisible) return;
+      
+      const serviceTypeSelect = document.getElementById('service_type');
+      if (!serviceTypeSelect) return;
+      
+      const serviceType = serviceTypeSelect.value;
+      const isCashPickup = serviceType === 'cash_pickup';
+      
+      // Elements to hide for cash pickup
+      const beneficiariesField = document.querySelector('#beneficiary-select')?.closest('div');
+      const searchTypeRadios = document.querySelector('.flex.items-center.gap-6');
+      const emailField = document.getElementById('email-field');
+      
+      if (isCashPickup) {
+          // Hide beneficiaries, search type radios, and email field
+          if (beneficiariesField) beneficiariesField.style.display = 'none';
+          if (searchTypeRadios) searchTypeRadios.style.display = 'none';
+          if (emailField) emailField.style.display = 'none';
+          
+          // Show phone field and make it required
+          const phoneField = document.getElementById('phone-field');
+          const phoneInput = document.getElementById('phone-input');
+          if (phoneField) {
+              phoneField.style.display = 'block';
+              if (phoneInput) phoneInput.setAttribute('required', 'required');
+          }
+          
+          // Update phone label to be clearer
+          const phoneLabel = phoneField?.querySelector('label');
+          if (phoneLabel) {
+              phoneLabel.innerHTML = 'Recipient Phone Number <span class="text-red-500">*</span>';
+          }
+      } else {
+          // Show beneficiaries, search type radios for other service types
+          if (beneficiariesField) beneficiariesField.style.display = 'block';
+          if (searchTypeRadios) searchTypeRadios.style.display = 'flex';
+          
+          // Reset phone field label
+          const phoneField = document.getElementById('phone-field');
+          const phoneLabel = phoneField?.querySelector('label');
+          if (phoneLabel) {
+              phoneLabel.innerHTML = 'Phone';
+          }
+          
+          // Handle email/phone visibility based on search_type
+          const searchTypeEmail = document.getElementById('search_type_email');
+          if (searchTypeEmail?.checked) {
+              if (emailField) emailField.style.display = 'block';
+              if (phoneField) phoneField.style.display = 'none';
+          } else {
+              if (emailField) emailField.style.display = 'none';
+              if (phoneField) phoneField.style.display = 'block';
+          }
+      }
+  }
+
+  // Updated toggleAgentSelection function
   function toggleAgentSelection() {
-      if (!isNormalFormVisible) return; // Exit if normal form is hidden
+      if (!isNormalFormVisible) return;
       
       const serviceTypeSelect = document.getElementById('service_type');
       const agentSelection = document.getElementById('agent-selection');
       const agentIdSelect = document.getElementById('agent_id');
+      const recipientNameField = document.getElementById('recipient-name-field');
+      const recipientNameInput = document.getElementById('recipient-name-input');
       
       if (!serviceTypeSelect || !agentSelection || !agentIdSelect) {
-          return; // Elements not found, exit early
+          return;
       }
       
-      if (serviceTypeSelect.value === 'transfer_via_agent') {
+      // Show agent selection for transfer_via_agent and cash_pickup
+      if (['transfer_via_agent', 'cash_pickup'].includes(serviceTypeSelect.value)) {
           agentSelection.style.display = 'block';
           agentIdSelect.setAttribute('required', 'required');
       } else {
           agentSelection.style.display = 'none';
           agentIdSelect.removeAttribute('required');
-          agentIdSelect.value = ''; // Clear selection
+          agentIdSelect.value = '';
       }
+      
+      // Show recipient name field ONLY for cash_pickup
+      if (serviceTypeSelect.value === 'cash_pickup') {
+          recipientNameField.style.display = 'block';
+          recipientNameInput.setAttribute('required', 'required');
+      } else {
+          recipientNameField.style.display = 'none';
+          recipientNameInput.removeAttribute('required');
+          recipientNameInput.value = '';
+      }
+      
+      // Toggle cash pickup specific fields
+      toggleCashPickupFields();
   }
 
   // Set up event listener when DOM is ready
@@ -515,7 +619,7 @@
           }
       }
 
-      // Initial check for Agent selection (runs only if form is visible)
+      // Initial check for Agent selection and cash pickup fields
       if (isNormalFormVisible) {
           toggleAgentSelection();
           const serviceTypeSelect = document.getElementById('service_type');
@@ -525,12 +629,14 @@
       }
   });
 
-
-  // Beneficiary selection autofill logic
+  // Beneficiary selection autofill logic (disable for cash pickup)
   const beneficiarySelect = document.getElementById('beneficiary-select');
   if (beneficiarySelect) {
       beneficiarySelect.addEventListener('change', function() {
-          if (!isNormalFormVisible) return; // Exit if normal form is hidden
+          if (!isNormalFormVisible) return;
+          
+          const serviceType = document.getElementById('service_type')?.value;
+          if (serviceType === 'cash_pickup') return; // Don't autofill for cash pickup
 
           const selectedOption = this.options[this.selectedIndex];
           const emailInput = document.getElementById('email-input');
@@ -544,30 +650,24 @@
               const searchTypePhone = document.getElementById('search_type_phone');
 
               if (phone) {
-                  // Prioritize phone if available
                   searchTypePhone.checked = true;
                   document.getElementById('email-field').style.display = 'none';
                   document.getElementById('phone-field').style.display = 'block';
                   phoneInput.value = phone;
-                  emailInput.value = email || ''; // Clear or set email in hidden field
+                  emailInput.value = email || '';
               } else if (email) {
-                  // Fallback to email
                   searchTypeEmail.checked = true;
                   document.getElementById('email-field').style.display = 'block';
                   document.getElementById('phone-field').style.display = 'none';
                   emailInput.value = email;
-                  phoneInput.value = ''; // Clear phone
+                  phoneInput.value = '';
               } else {
-                  // If neither is available, clear fields and default to email search
                   searchTypeEmail.checked = true;
                   document.getElementById('email-field').style.display = 'block';
                   document.getElementById('phone-field').style.display = 'none';
                   emailInput.value = '';
                   phoneInput.value = '';
               }
-          } else {
-              // Option is the default "-- Select a beneficiary..."
-              // Do not clear values to respect user's manual input or old('email')/old('phone')
           }
       });
   }

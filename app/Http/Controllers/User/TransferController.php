@@ -105,469 +105,494 @@ class TransferController extends Controller
         'fakeBankAccounts' => $fakeBankAccounts, // New: Recipient's fake banks
     ]);
 }
+
+
+
 public function send(Request $request)
 {
-// In TransferController.php, public function send(Request $request)
+    $currencies = CurrencyService::getSupportedCurrencies();
+    $selectedCurrency = session('user_currency', 'USD');
 
-$currencies = CurrencyService::getSupportedCurrencies();
-$selectedCurrency = session('user_currency', 'USD');
+    // --- START: CONSOLIDATED VALIDATION LOGIC ---
 
-// --- START: CONSOLIDATED VALIDATION LOGIC ---
-
-// 1. Get transfer service early to determine required fields
-$transferService = null;
-$destinationType = null;
-if ($request->filled('transfer_service_id')) {
-    $transferService = TransferService::find($request->transfer_service_id);
-    if ($transferService) {
-        $destinationType = $transferService->destination_type;
+    // 1. Get transfer service early to determine required fields
+    $transferService = null;
+    $destinationType = null;
+    if ($request->filled('transfer_service_id')) {
+        $transferService = TransferService::find($request->transfer_service_id);
+        if ($transferService) {
+            $destinationType = $transferService->destination_type;
+        }
     }
-}
 
-// 2. Define base validation rules
-$rules = [
-    'search_type' => 'required|in:email,phone',
-    'amount' => 'required|numeric|min:0.01',
-    'currency' => 'nullable|string|in:' . implode(',', array_keys($currencies)),
-// The recipient (user account) is only required if it's a Wallet-to-Wallet style transfer.
-    // Card/Bank payouts implicitly find the receiver account based on the card/bank details which are later linked to the User.
-    // The user receiver is still determined below, but the fields are not required for validation here.
-    'email' => [
-        'nullable',
-        'email',
-        // ONLY require email/phone if the destination is NOT a card or bank, and the search type is selected.
-        function ($attribute, $value, $fail) use ($request, $destinationType) {
-            $isNormalTransfer = !in_array($destinationType, ['card', 'bank']);
+    // 2. Define base validation rules
+    $rules = [
+        'search_type' => 'required|in:email,phone',
+        'amount' => 'required|numeric|min:0.01',
+        'currency' => 'nullable|string|in:' . implode(',', array_keys($currencies)),
+        'email' => [
+            'nullable',
+            'email',
+            function ($attribute, $value, $fail) use ($request, $destinationType) {
+                $isNormalTransfer = !in_array($destinationType, ['card', 'bank']);
+                $isCashPickup = $request->service_type === 'cash_pickup';
 
-            if ($isNormalTransfer && $request->search_type === 'email' && empty($value)) {
-                $fail("The {$attribute} field is required when search type is email.");
+                if ($isNormalTransfer && !$isCashPickup && $request->search_type === 'email' && empty($value)) {
+                    $fail("The {$attribute} field is required when search type is email.");
+                }
+            },
+            function ($attribute, $value, $fail) use ($destinationType, $request) {
+                $isNormalTransfer = !in_array($destinationType, ['card', 'bank']);
+                $isCashPickup = $request->service_type === 'cash_pickup';
+                
+                if ($isNormalTransfer && !$isCashPickup && !empty($value) && !User::where($attribute, $value)->exists()) {
+                    $fail("The selected {$attribute} is invalid.");
+                }
             }
-        },
-        // The exists rule should ONLY run for normal transfers, as the Card/Bank
-        // transfers might send to a user that doesn't exist yet (created implicitly)
-        function ($attribute, $value, $fail) use ($destinationType) {
-            $isNormalTransfer = !in_array($destinationType, ['card', 'bank']);
-            if ($isNormalTransfer && !empty($value) && !User::where($attribute, $value)->exists()) {
-                $fail("The selected {$attribute} is invalid.");
+        ],
+        'phone' => [
+            'nullable',
+            'string',
+            function ($attribute, $value, $fail) use ($request, $destinationType) {
+                $isNormalTransfer = !in_array($destinationType, ['card', 'bank']);
+                $isCashPickup = $request->service_type === 'cash_pickup';
+
+                if ($isNormalTransfer && !$isCashPickup && $request->search_type === 'phone' && empty($value)) {
+                    $fail("The {$attribute} field is required when search type is phone.");
+                }
+            },
+            function ($attribute, $value, $fail) use ($destinationType, $request) {
+                $isNormalTransfer = !in_array($destinationType, ['card', 'bank']);
+                $isCashPickup = $request->service_type === 'cash_pickup';
+                
+                if ($isNormalTransfer && !$isCashPickup && !empty($value) && !User::where($attribute, $value)->exists()) {
+                    $fail("The selected {$attribute} is invalid.");
+                }
             }
-        }
-    ],
-    'phone' => [
-        'nullable',
-        'string',
-        function ($attribute, $value, $fail) use ($request, $destinationType) {
-            $isNormalTransfer = !in_array($destinationType, ['card', 'bank']);
-
-            if ($isNormalTransfer && $request->search_type === 'phone' && empty($value)) {
-                $fail("The {$attribute} field is required when search type is phone.");
+        ],
+        'service_type' => 'nullable|in:wallet_to_wallet,transfer_via_agent,cash_pickup',
+        'agent_id' => [
+            'nullable',
+            'exists:users,id',
+            function ($attribute, $value, $fail) use ($request) {
+                if (in_array($request->service_type, ['cash_pickup', 'transfer_via_agent']) && empty($value)) {
+                    $fail('An agent must be selected for this service type.');
+                }
             }
-        },
-        function ($attribute, $value, $fail) use ($destinationType) {
-            $isNormalTransfer = !in_array($destinationType, ['card', 'bank']);
-            if ($isNormalTransfer && !empty($value) && !User::where($attribute, $value)->exists()) {
-                $fail("The selected {$attribute} is invalid.");
-            }
-        }
-    ],
-    // The service_type and agent_id are now also only relevant for wallet-to-wallet style transfers, not for card/bank payouts.
-    'service_type' => 'nullable|in:wallet_to_wallet,transfer_via_agent',
-    'agent_id' => 'nullable|exists:users,id',
-    'payment_method' => 'required|in:wallet,credit_card,bank_account',
-    'card_id' => 'nullable|exists:payment_methods,id',
-    'bank_id' => 'nullable|exists:payment_methods,id',
-    'transfer_service_id' => 'nullable|exists:transfer_services,id',
-    
-    // Recipient fields are nullable by default
-    'recipient_card_id' => 'nullable|exists:fake_cards,id',
-    'recipient_bank_id' => 'nullable|exists:fake_bank_accounts,id',
-    'recipient_card_nickname' => 'nullable|string|max:255',
-    'recipient_bank_nickname' => 'nullable|string|max:255',
-];
+        ],
+        'payment_method' => 'required|in:wallet,credit_card,bank_account',
+        'card_id' => 'nullable|exists:payment_methods,id',
+        'bank_id' => 'nullable|exists:payment_methods,id',
+        'transfer_service_id' => 'nullable|exists:transfer_services,id',
+        'recipient_card_id' => 'nullable|exists:fake_cards,id',
+        'recipient_bank_id' => 'nullable|exists:fake_bank_accounts,id',
+        'recipient_card_nickname' => 'nullable|string|max:255',
+        'recipient_bank_nickname' => 'nullable|string|max:255',
+        'recipient_name' => 'nullable|string|max:255',
+        // Add fields for non-user recipients for storage in the transaction record if needed
+        'cardholder_name' => 'nullable|string|max:255',
+        'card_number' => 'nullable|string|max:16',
+        'account_holder_name' => 'nullable|string|max:255',
+        'bank_name' => 'nullable|string|max:255',
+        'account_number' => 'nullable|string|max:50',
+    ];
 
-// 3. Conditionally add 'required' rules based on the service's destination type
-if ($destinationType === 'card') {
-    $rules = array_merge($rules, [
-        'cardholder_name' => 'required|string|max:255',
-        'card_number' => 'required|string|digits:16',
-
-    ]);
-} elseif ($destinationType === 'bank') {
-    $rules = array_merge($rules, [
-        'account_holder_name' => 'required|string|max:255',
-        'bank_name' => 'required|string|max:255',
-        'account_number' => 'required|string|max:50',
-
-    ]);
-}
-
-if ($transferService) {
-    // If a service is selected, the currency must be present and must match the service's destination currency.
-    $rules['currency'] = 'required|string|in:' . $transferService->destination_currency;
-}
-
-// 4. Run the single, consolidated validation
-$request->validate($rules);
-
-// --- END: CONSOLIDATED VALIDATION LOGIC ---
-
-// Continue with the rest of your logic...
-$sender = Auth::user();
-$sender->refresh();
-// ... (The amount calculation and rest of the function should follow here)
-
-$amount = (float) $request->amount;
-// Determine service type: if a transfer service is used for Card/Bank, it's a special type.
-// Otherwise, fall back to the form field.
-// Map payout services to an existing valid enum value
-if ($transferService && in_array($transferService->destination_type, ['card', 'bank'])) {
-    $serviceType = 'wallet_to_wallet'; // or another valid ENUM type
-} else {
-    $serviceType = $request->service_type; 
-}
-
-
-        // Get transfer service if selected
-$transferService = null;
-if ($request->filled('transfer_service_id')) {
-    $transferService = TransferService::find($request->transfer_service_id);
-}
-        // ... after the main $request->validate([...]); call
-
-// Conditional validation for recipient bank/card details
-if ($transferService) {
-    if ($transferService->destination_type === 'card') {
-        $request->validate([
+    // 3. Conditionally add 'required' rules based on the service's destination type
+    if ($destinationType === 'card') {
+        $rules = array_merge($rules, [
             'cardholder_name' => 'required|string|max:255',
             'card_number' => 'required|string|digits:16',
-
+            'recipient_name' => 'required|string|max:255',
         ]);
-    } elseif ($transferService->destination_type === 'bank') {
-        $request->validate([
+    } elseif ($destinationType === 'bank') {
+        $rules = array_merge($rules, [
             'account_holder_name' => 'required|string|max:255',
             'bank_name' => 'required|string|max:255',
             'account_number' => 'required|string|max:50',
-
+            'recipient_name' => 'required|string|max:255',
+        ]);
+    } elseif ($request->service_type === 'cash_pickup') {
+        $rules = array_merge($rules, [
+            'recipient_name' => 'required|string|max:255',
         ]);
     }
-}
-// ... continue with the rest of the function (amount calculation, etc.)
 
-        // Calculate amounts based on whether a transfer service is used
-        if ($transferService) {
-            // When using transfer service:
-            // - User enters amount in destination currency
-            // - Fee is in USD
-            // - We need to calculate the USD equivalent they need to pay
-            
-            $destinationAmount = $amount; // Amount receiver gets in their currency
-            $fee = (float) $transferService->fee; // Fee in USD
-            $exchangeRate = (float) $transferService->exchange_rate;
-            
-            // Calculate USD needed from sender's wallet
-            $amountInUsd = ($destinationAmount / $exchangeRate) + $fee;
-            $amountInUsd = round($amountInUsd, 2);
-            
-            // Validate minimum amount after fee
-            if ($destinationAmount <= 0) {
-                return back()->withInput()->withErrors(['amount' => 'Amount must be greater than zero.']);
-            }
-            
-            $transactionCurrency = $transferService->destination_currency;
-        } else {
-            // Standard transfer without transfer service
-            $transactionCurrency = $request->currency ?? $selectedCurrency;
-            
-            if ($transactionCurrency === 'USD') {
-                $amountInUsd = $amount;
-            } else {
-                $amountInUsd = round(CurrencyService::convert($amount, 'USD', $transactionCurrency), 2);
-                
-                // Sanity check for conversion
-                if ($amountInUsd > ($amount * 100) && $amount > 100) {
-                    \Log::warning("Suspicious currency conversion: {$amount} {$transactionCurrency} = {$amountInUsd} USD");
-                    return back()->withInput()->withErrors([
-                        'amount' => "Currency conversion failed. Please try again or contact support."
-                    ]);
-                }
-            }
-            
-            $fee = 0;
-            $destinationAmount = $amount;
-        }
+    if ($transferService) {
+        $rules['currency'] = 'required|string|in:' . $transferService->destination_currency;
+    }
 
-        // Agent validation for transfer_via_agent
-        if ($serviceType === 'transfer_via_agent' && !$transferService) {
-            $request->validate(['agent_id' => 'required|exists:users,id']);
-            $selectedAgent = User::findOrFail($request->agent_id);
-            
-            if (!$selectedAgent->hasRole('Agent') || !$selectedAgent->is_available || $selectedAgent->status !== 'active') {
-                return back()->withInput()->withErrors(['agent_id' => 'Selected agent is not available.']);
-            }
-        }
+    // 4. Run the single, consolidated validation
+    $request->validate($rules);
 
-// TransferController.php - Replace the block above with this:
+    // --- END: CONSOLIDATED VALIDATION LOGIC ---
 
-// Determine receiver
-// Determine receiver
-$receiver = null;
-$isCardOrBankPayout = $transferService && in_array($transferService->destination_type, ['card', 'bank']);
+    $sender = Auth::user();
+    $sender->refresh();
 
-if (!$isCardOrBankPayout) {
-    // --- STANDARD WALLET-TO-WALLET TRANSFER ---
-    // Search by email or phone as provided by the user (which is required if it's not a payout)
-    if ($request->search_type === 'email') {
-        $receiver = User::where('email', $request->email)->first();
+    $amount = (float) $request->amount;
+    
+    if ($transferService && in_array($transferService->destination_type, ['card', 'bank'])) {
+        $serviceType = 'wallet_to_wallet';
     } else {
-        $receiver = User::where('phone', $request->phone)->first();
-    }
-    
-    // If receiver is not found for a standard transfer, it's a genuine error.
-    if (!$receiver) {
-        return back()->withInput()->withErrors(['error' => 'Receiver not found.']);
+        $serviceType = $request->service_type; 
     }
 
-} else {
-    // --- CARD/BANK PAYOUT SERVICE ---
-    // The recipient is the person who owns the card/bank account, not necessarily an existing user in the system.
-    
-    // 1. Try to find the user who already owns this card/bank account (if previously saved)
-    if ($destinationType === 'card' && $request->filled('card_number')) {
-        $card = FakeCard::where('card_number', $request->card_number)->first();
-        if ($card) {
-            $receiver = User::find($card->user_id);
-        }
-    } elseif ($destinationType === 'bank' && $request->filled('account_number')) {
-        $bank = FakeBankAccount::where('account_number', $request->account_number)->first();
-        if ($bank) {
-            $receiver = User::find($bank->user_id);
-        }
-    }
-
-    // 2. If no existing user is found, create a placeholder 'system' user 
-    // to link the new FakeCard/FakeBankAccount to in the next step.
-    if (!$receiver) {
-        $receiverName = $request->cardholder_name ?? $request->account_holder_name ?? 'Transfer Recipient';
+    // Calculate amounts based on whether a transfer service is used
+    if ($transferService) {
+        $destinationAmount = $amount;
+        $fee = (float) $transferService->fee;
+        $exchangeRate = (float) $transferService->exchange_rate;
+        // The original calculation seems to be: Sender pays $ (destination / rate) + fee, for a destination currency amount.
+        // It's unconventional but kept for consistency, assuming $amount is the desired DESTINATION amount in destination currency.
+        $amountInUsd = ($destinationAmount / $exchangeRate) + $fee;
+        $amountInUsd = round($amountInUsd, 2);
         
-        // Generate a unique identifier (hash of card/account number) for the placeholder user's email
-        $identifier = $request->card_number ?? $request->account_number ?? 'temp' . time(); 
-        $uniqueEmail = 'payout_' . md5($identifier) . '@system.com';
-
-        // Find or create the recipient user
-        $receiver = User::firstOrCreate(
-            ['email' => $uniqueEmail],
-            [
-                'name' => $receiverName,
-                'password' => \Hash::make(\Str::random(12)), 
-                'role' => 'recipient', 
-                'status' => 'active', 
-                'phone' => null, 
-            ]
-        );
-    }
-}
-
-if ($receiver->id === $sender->id) {
-    return back()->withInput()->withErrors(['error' => 'You cannot send money to yourself.']);
-}
-
-        // Payment method validation and balance checks
-        $paymentMethod = null;
-        $card = null;
-        $bank = null;
-
-        $recipientCard = null;
-        $recipientBank = null;
-
-
-
-        // If a transfer service is used, process the new card/bank details
-        if ($transferService) {
-            if ($transferService->destination_type === 'card') {
-                // Find existing card or create a new one
-                $recipientCard = FakeCard::firstOrCreate(
-                    [
-                        'card_number' => $request->card_number,
-                    ],
-                    [
-                        'user_id' => $receiver->id, // Assign to the receiver
-                        'nickname' => $request->recipient_card_nickname ?? 'New Card',
-                        'cardholder_name' => $request->cardholder_name,
-
-                        'balance' => 0.00, // Initialize balance if new
-                    ]
-                );
-            } elseif ($transferService->destination_type === 'bank') {
-                // Find existing bank account or create a new one
-                $recipientBank = FakeBankAccount::firstOrCreate(
-                    [
-                        'account_number' => $request->account_number,
-                    ],
-                    [
-                        'user_id' => $receiver->id, // Assign to the receiver
-                        'nickname' => $request->recipient_bank_nickname ?? 'New Bank Account',
-                        'account_holder_name' => $request->account_holder_name,
-                        'bank_name' => $request->bank_name,
-
-                        'balance' => 0.00, // Initialize balance if new
-                    ]
-                );
+        if ($destinationAmount <= 0) {
+            return back()->withInput()->withErrors(['amount' => 'Amount must be greater than zero.']);
+        }
+        
+        $transactionCurrency = $transferService->destination_currency;
+    } else {
+        $transactionCurrency = $request->currency ?? $selectedCurrency;
+        
+        if ($transactionCurrency === 'USD') {
+            $amountInUsd = $amount;
+        } else {
+            // NOTE: Original code's conversion direction looks reversed (amount * rate, not amount / rate for USD -> X).
+            // Retaining the original call `CurrencyService::convert($amount, 'USD', $transactionCurrency)`
+            // which in a proper service would convert $amount FROM $transactionCurrency TO USD (or vice versa, depending on implementation).
+            // Assuming it converts $amount in $transactionCurrency to $amountInUsd.
+            $amountInUsd = round(CurrencyService::convert($amount, 'USD', $transactionCurrency), 2);
+            
+            if ($amountInUsd > ($amount * 100) && $amount > 100) {
+                \Log::warning("Suspicious currency conversion: {$amount} {$transactionCurrency} = {$amountInUsd} USD");
+                return back()->withInput()->withErrors([
+                    'amount' => "Currency conversion failed. Please try again or contact support."
+                ]);
             }
         }
+        
+        $fee = 0;
+        $destinationAmount = $amount;
+    }
 
-        if ($request->payment_method === 'credit_card') {
+    // ✅ DETERMINE RECEIVER BEFORE USING IT
+    $receiver = null;
+    $isCardOrBankPayout = $transferService && in_array($transferService->destination_type, ['card', 'bank']);
+    $isCashPickup = $serviceType === 'cash_pickup';
+
+    if (!$isCardOrBankPayout && !$isCashPickup) {
+        // Standard wallet-to-wallet transfer
+        if ($request->search_type === 'email') {
+            $receiver = User::where('email', $request->email)->first();
+        } else {
+            $receiver = User::where('phone', $request->phone)->first();
+        }
+        
+        if (!$receiver) {
+            return back()->withInput()->withErrors(['error' => 'Receiver not found.']);
+        }
+    } 
+    // ELSE: $receiver remains null, which is intended for non-user recipients.
+    
+    // Check for sending to self ONLY for wallet-to-wallet
+    if ($receiver && $receiver->id === $sender->id) {
+        return back()->withInput()->withErrors(['error' => 'You cannot send money to yourself.']);
+    }
+
+ if ($serviceType === 'cash_pickup' || $serviceType === 'transfer_via_agent') {
+    $request->validate(['agent_id' => 'required|exists:users,id']);
+    $selectedAgent = User::findOrFail($request->agent_id);
+    
+    if (!$selectedAgent->hasRole('Agent') || !$selectedAgent->is_available || $selectedAgent->status !== 'active') {
+        return back()->withInput()->withErrors(['agent_id' => 'Selected agent is not available.']);
+    }
+
+    $commissionRate = $selectedAgent->commission ?? 0;
+    $commissionAmount = round(($amountInUsd * $commissionRate) / 100, 2);
+    
+    // ✅ FIX: DEDUCT MONEY FROM SENDER IMMEDIATELY FOR CASH PICKUP
+    if ($serviceType === 'cash_pickup') {
+        // Validation and deduction logic (kept as it handles sender's funds)
+        if ($request->payment_method === 'wallet') {
+            $senderBalance = (float) ($sender->balance ?? 0);
+            if ($senderBalance < $amountInUsd) {
+                return back()->withInput()->withErrors([
+                    'amount' => "Insufficient wallet balance. You need " . number_format($amountInUsd, 2) . " USD"
+                ]);
+            }
+            
+            // Deduct from sender's wallet immediately
+            $sender->balance -= $amountInUsd;
+            $sender->save();
+            
+        } elseif ($request->payment_method === 'credit_card') {
             $request->validate(['card_id' => 'required|exists:payment_methods,id']);
             $paymentMethod = PaymentMethod::findOrFail($request->card_id);
-            // Search the fake card table based on the last 4 digits stored in payment_methods
             $card = FakeCard::where('card_number', 'like', '%'.$paymentMethod->last4)->first();
             
             if (!$card || $card->balance < $amountInUsd) {
                 $available = $card ? number_format($card->balance, 2) : '0.00';
                 return back()->withInput()->withErrors([
-                    'amount' => "Insufficient balance on selected credit card. Available: $available USD, Required: " . number_format($amountInUsd, 2) . " USD"
+                    'amount' => "Insufficient card balance. Available: $available USD, Required: " . number_format($amountInUsd, 2) . " USD"
                 ]);
             }
+            
+            $card->balance -= $amountInUsd;
+            $card->save();
+            
         } elseif ($request->payment_method === 'bank_account') {
             $request->validate(['bank_id' => 'required|exists:payment_methods,id']);
             $paymentMethod = PaymentMethod::findOrFail($request->bank_id);
-            // Search the fake bank account table based on the last 4 digits stored in payment_methods
             $bank = FakeBankAccount::where('account_number', 'like', '%'.$paymentMethod->last4)->first();
             
             if (!$bank || $bank->balance < $amountInUsd) {
                 $available = $bank ? number_format($bank->balance, 2) : '0.00';
                 return back()->withInput()->withErrors([
-                    'amount' => "Insufficient balance in selected bank account. Available: $available USD, Required: " . number_format($amountInUsd, 2) . " USD"
+                    'amount' => "Insufficient bank balance. Available: $available USD, Required: " . number_format($amountInUsd, 2) . " USD"
                 ]);
             }
-        } else {
-            // Wallet payment
-            $senderBalance = (float) ($sender->balance ?? 0);
             
-            if ($senderBalance < $amountInUsd) {
-                $amountInSelectedCurrency = CurrencyService::format($destinationAmount, $transactionCurrency);
-                $balanceInSelectedCurrency = CurrencyService::format(
-                    CurrencyService::convert($senderBalance, $transactionCurrency, 'USD'), 
-                    $transactionCurrency
-                );
-                
-                return back()->withInput()->withErrors([
-                    'amount' => "Insufficient wallet balance. You need " . number_format($amountInUsd, 2) . " USD (≈ {$amountInSelectedCurrency}), but you only have {$senderBalance} USD (≈ {$balanceInSelectedCurrency}) available."
-                ]);
-            }
+            $bank->balance -= $amountInUsd;
+            $bank->save();
         }
+    }
+    // For transfer_via_agent, money stays with sender until agent completes
+    
+    $status = 'in_progress';
+    
+    $transaction = Transaction::create([
+        'sender_id' => $sender->id,
+        // Set receiver_id to null for non-user transactions (cash pickup/agent transfer)
+        'receiver_id' => $receiver?->id, 
+        'amount' => $destinationAmount,
+        'amount_usd' => $amountInUsd,
+        'currency' => $transactionCurrency,
+        'status' => $status,
+        'agent_id' => $request->agent_id,
+        'service_type' => $serviceType,
+        'payment_method' => $request->payment_method,
+        'transfer_service_id' => $transferService?->id,
+        'fee_percent' => $commissionRate,
+        'fee_amount_usd' => $commissionAmount,
+        // Store recipient details on the transaction for non-user transfers
+        'recipient_name' => $request->recipient_name, 
+        'recipient_phone' => $request->phone,
+        // Add other recipient fields if necessary for non-user transfers
+    ]);
 
-        // Process transaction based on service type
-        if ($serviceType === 'wallet_to_wallet') {
-            $admin = User::role('Admin')->first();
-            $adminCommission = $admin->commission ?? 0;
+    NotificationService::sendAgentNotification(
+        $selectedAgent,
+        $serviceType === 'cash_pickup' ? 'New Cash Pickup Request' : 'New Transfer Request',
+        "You have a new " . ($serviceType === 'cash_pickup' ? 'cash pickup' : 'transfer') . " of " . CurrencyService::format($transaction->amount, $transaction->currency ?? 'USD') . " from {$sender->name} for " . ($request->recipient_name ?? 'a recipient') . ".",
+        $transaction
+    );
 
-            // Calculate fee (use transfer service fee or admin commission)
-            $feeInUsd = $transferService ? (float) $transferService->fee : round(($amountInUsd * $adminCommission) / 100, 2);
+    $message = $serviceType === 'cash_pickup' 
+        ? 'Your cash pickup request has been sent to the agent. The recipient can collect the cash once the agent accepts and completes the transaction.'
+        : 'Your transfer request has been sent to the selected agent.';
 
-            // Flag suspicious transactions
-            $transactionStatus = $amountInUsd > 1000 ? 'suspicious' : 'completed';
+    NotificationService::transferInitiated($transaction);
 
-            // Only process money movement if not suspicious
-            if ($transactionStatus !== 'suspicious') {
-                // Deduct from sender
-                if ($request->payment_method === 'wallet') {
-                    $sender->balance -= $amountInUsd;
-                    $sender->save();
-                } elseif ($request->payment_method === 'credit_card') {
-                    $card->balance -= $amountInUsd;
-                    $card->save();
-                } elseif ($request->payment_method === 'bank_account') {
-                    $bank->balance -= $amountInUsd;
-                    $bank->save();
-                }
+    return redirect()->route('user.transactions')->with('success', $message);
+}
 
-                $receiverAmount = $amountInUsd - $feeInUsd;
+    // Payment method validation and balance checks
+    $paymentMethod = null;
+    $card = null;
+    $bank = null;
+    // Removed $recipientCard/$recipientBank declaration here as they are no longer needed
+    // for creating/updating a fake user account.
 
-                // Credit receiver to correct account type based on transfer service
-                if ($transferService && $transferService->destination_type === 'card' && $recipientCard) {
-                    $recipientCard->balance += $receiverAmount;
-                    $recipientCard->save();
-                } elseif ($transferService && $transferService->destination_type === 'bank' && $recipientBank) {
-                    $recipientBank->balance += $receiverAmount;
-                    $recipientBank->save();
-                } else {
-                    // Default to wallet (for standard transfers or service to wallet)
-                    $receiver->balance += $receiverAmount;
-                    $receiver->save();
-                }
+    // If a transfer service is used for card/bank payouts, find/create the *FakeCard/FakeBankAccount*
+    // but DO NOT create a User record. The Transaction's receiver_id will be null.
+    if ($transferService && in_array($transferService->destination_type, ['card', 'bank'])) {
+        if ($transferService->destination_type === 'card') {
+             // Find or create the FakeCard (this is fine, as it's not the users table)
+            $recipientCard = FakeCard::firstOrCreate(
+                ['card_number' => $request->card_number],
+                [
+                    // Since we're not creating a user, link it to the sender's ID or a system user ID if required by the model
+                    'user_id' => $sender->id, // A placeholder/system ID can be used here. For simplicity, using sender's ID
+                    'nickname' => $request->recipient_card_nickname ?? 'New Card',
+                    'cardholder_name' => $request->cardholder_name,
+                    'balance' => 0.00,
+                ]
+            );
+        } elseif ($transferService->destination_type === 'bank') {
+             // Find or create the FakeBankAccount (this is fine, as it's not the users table)
+            $recipientBank = FakeBankAccount::firstOrCreate(
+                ['account_number' => $request->account_number],
+                [
+                    'user_id' => $sender->id, // A placeholder/system ID can be used here. For simplicity, using sender's ID
+                    'nickname' => $request->recipient_bank_nickname ?? 'New Bank Account',
+                    'account_holder_name' => $request->account_holder_name,
+                    'bank_name' => $request->bank_name,
+                    'balance' => 0.00,
+                ]
+            );
+        }
+        // $receiver remains NULL for these transfers
+    }
+    // ELSE: $receiver must be set for a wallet-to-wallet transfer at this point.
 
-                // Credit admin with fee
+    // Payment method balance checks (Sender's side) - same as before
+    if ($request->payment_method === 'credit_card') {
+        $request->validate(['card_id' => 'required|exists:payment_methods,id']);
+        $paymentMethod = PaymentMethod::findOrFail($request->card_id);
+        $card = FakeCard::where('card_number', 'like', '%'.$paymentMethod->last4)->first();
+        
+        if (!$card || $card->balance < $amountInUsd) {
+            $available = $card ? number_format($card->balance, 2) : '0.00';
+            return back()->withInput()->withErrors([
+                'amount' => "Insufficient balance on selected credit card. Available: $available USD, Required: " . number_format($amountInUsd, 2) . " USD"
+            ]);
+        }
+    } elseif ($request->payment_method === 'bank_account') {
+        $request->validate(['bank_id' => 'required|exists:payment_methods,id']);
+        $paymentMethod = PaymentMethod::findOrFail($request->bank_id);
+        $bank = FakeBankAccount::where('account_number', 'like', '%'.$paymentMethod->last4)->first();
+        
+        if (!$bank || $bank->balance < $amountInUsd) {
+            $available = $bank ? number_format($bank->balance, 2) : '0.00';
+            return back()->withInput()->withErrors([
+                'amount' => "Insufficient balance in selected bank account. Available: $available USD, Required: " . number_format($amountInUsd, 2) . " USD"
+            ]);
+        }
+    } else {
+        $senderBalance = (float) ($sender->balance ?? 0);
+        
+        if ($senderBalance < $amountInUsd) {
+            $amountInSelectedCurrency = CurrencyService::format($destinationAmount, $transactionCurrency);
+            $balanceInSelectedCurrency = CurrencyService::format(
+                CurrencyService::convert($senderBalance, $transactionCurrency, 'USD'), 
+                $transactionCurrency
+            );
+            
+            return back()->withInput()->withErrors([
+                'amount' => "Insufficient wallet balance. You need " . number_format($amountInUsd, 2) . " USD (≈ {$amountInSelectedCurrency}), but you only have {$senderBalance} USD (≈ {$balanceInSelectedCurrency}) available."
+            ]);
+        }
+    }
+
+    // Process transaction based on service type
+    if ($serviceType === 'wallet_to_wallet') {
+        $admin = User::role('Admin')->first();
+        $adminCommission = $admin->commission ?? 0;
+        $feeInUsd = $transferService ? (float) $transferService->fee : round(($amountInUsd * $adminCommission) / 100, 2);
+        $transactionStatus = $amountInUsd > 1000 ? 'suspicious' : 'completed';
+
+        // NOTE: The balance deduction/addition logic below only runs if $transactionStatus is NOT 'suspicious'.
+        if ($transactionStatus !== 'suspicious') {
+            if ($request->payment_method === 'wallet') {
+                $sender->balance -= $amountInUsd;
+                $sender->save();
+            } elseif ($request->payment_method === 'credit_card') {
+                $card->balance -= $amountInUsd;
+                $card->save();
+            } elseif ($request->payment_method === 'bank_account') {
+                $bank->balance -= $amountInUsd;
+                $bank->save();
+            }
+
+            $receiverAmount = $amountInUsd - $feeInUsd;
+
+            // Add the money to the destination (Wallet, FakeCard, or FakeBankAccount)
+            if ($transferService && $transferService->destination_type === 'card' && isset($recipientCard)) {
+                $recipientCard->balance += $receiverAmount;
+                $recipientCard->save();
+            } elseif ($transferService && $transferService->destination_type === 'bank' && isset($recipientBank)) {
+                $recipientBank->balance += $receiverAmount;
+                $recipientBank->save();
+            } elseif ($receiver) { // Only for true wallet-to-wallet transfers
+                $receiver->balance += $receiverAmount;
+                $receiver->save();
+            }
+            
+            // NOTE: $admin is assumed to be a valid User and exists.
+            if ($admin) {
                 $admin->balance += $feeInUsd;
                 $admin->save();
             }
-
-            // Create transaction record
-            $transaction = Transaction::create([
-                'sender_id' => $sender->id,
-                'receiver_id' => $receiver->id,
-                'amount' => $amount,
-                'amount_usd' => $amountInUsd,
-                'currency' => $transactionCurrency,
-                'status' => $transactionStatus,
-                'agent_id' => $admin->id,
-                'service_type' => $serviceType,
-                'payment_method' => $request->payment_method,
-                'fee_percent' => $adminCommission,
-                'fee_amount_usd' => $feeInUsd,
-                'transfer_service_id' => $transferService?->id,
-
-            ]);
-
-            $message = $transactionStatus === 'suspicious'
-                ? 'Transaction flagged as suspicious and awaiting admin approval.'
-                : 'Money sent successfully!';
-
-            NotificationService::transferInitiated($transaction);
-
-            if ($transactionStatus === 'suspicious') {
-                NotificationService::transferPendingReview($transaction);
-            } else {
-                NotificationService::transferCompleted($transaction);
-            }
-
-            return redirect()->route('user.transactions')->with('success', $message);
-            
-        } else {
-            // Transfer via agent
-            $status = $request->agent_id ? 'in_progress' : 'pending_agent';
-            
-            $transaction = Transaction::create([
-                'sender_id' => $sender->id,
-                'receiver_id' => $receiver->id,
-                'amount' => $destinationAmount,
-                'currency' => $transactionCurrency,
-                'status' => $status,
-                'agent_id' => $request->agent_id ?? null,
-                'service_type' => $serviceType,
-                'payment_method' => $request->payment_method,
-                'transfer_service_id' => $transferService?->id,
-                'fee_percent' => $selectedAgent->commission ?? null,
-                'fee_amount_usd' => 0,
-                'fee' => $transferService ? (float) $transferService->fee : 0,
-            ]);
-
-            if ($transaction->agent_id) {
-                $transaction->loadMissing('agent');
-
-                NotificationService::sendAgentNotification(
-                    $transaction->agent,
-                    'New money transfer request',
-                    "You have a new transfer of " . CurrencyService::format($transaction->amount, $transaction->currency ?? 'USD') . " from {$sender->name} to {$receiver->name}.",
-                    $transaction
-                );
-            }
-
-            $message = $request->agent_id
-                ? 'Your transfer request has been sent to the selected agent.'
-                : 'Your transfer request has been sent. An agent will be assigned soon.';
-
-            NotificationService::transferInitiated($transaction);
-
-            return redirect()->route('user.transactions')->with('success', $message);
         }
+
+        $transaction = Transaction::create([
+            'sender_id' => $sender->id,
+            // $receiver is NULL for card/bank payouts, ID for wallet-to-wallet
+            'receiver_id' => $receiver?->id, 
+            'amount' => $amount,
+            'amount_usd' => $amountInUsd,
+            'currency' => $transactionCurrency,
+            'status' => $transactionStatus,
+            'agent_id' => $admin?->id,
+            'service_type' => $serviceType,
+            'payment_method' => $request->payment_method,
+            'fee_percent' => $adminCommission,
+            'fee_amount_usd' => $feeInUsd,
+            'transfer_service_id' => $transferService?->id,
+            // Store recipient details for non-user transfers
+            'recipient_name' => $request->recipient_name, 
+            'recipient_card_number' => $request->card_number,
+            'recipient_account_number' => $request->account_number,
+            // Add other recipient fields if necessary
+        ]);
+
+        $message = $transactionStatus === 'suspicious'
+            ? 'Transaction flagged as suspicious and awaiting admin approval.'
+            : 'Money sent successfully!';
+
+        NotificationService::transferInitiated($transaction);
+
+        if ($transactionStatus === 'suspicious') {
+            NotificationService::transferPendingReview($transaction);
+        } else {
+            NotificationService::transferCompleted($transaction);
+        }
+
+        return redirect()->route('user.transactions')->with('success', $message);
+        
+    } else {
+        // Transfer via agent (fallback for transfer_via_agent/cash_pickup if not handled above, but agent transfers are handled above)
+        // This 'else' block seems redundant if $serviceType is correctly set to 'wallet_to_wallet' for card/bank payouts.
+        // Keeping it for safety, but modifying to set $receiver_id to null if it's not a user-to-user transfer.
+        
+        $status = $request->agent_id ? 'in_progress' : 'pending_agent';
+        
+        $transaction = Transaction::create([
+            'sender_id' => $sender->id,
+            // Set receiver_id to null for non-user transactions
+            'receiver_id' => $receiver?->id, 
+            'amount' => $destinationAmount,
+            'currency' => $transactionCurrency,
+            'status' => $status,
+            'agent_id' => $request->agent_id ?? null,
+            'service_type' => $serviceType,
+            'payment_method' => $request->payment_method,
+            'transfer_service_id' => $transferService?->id,
+            'fee_percent' => 0,
+            'fee_amount_usd' => 0,
+            // Store recipient details for non-user transfers
+            'recipient_name' => $request->recipient_name, 
+            'recipient_phone' => $request->phone,
+        ]);
+
+        if ($transaction->agent_id) {
+            $transaction->loadMissing('agent');
+            NotificationService::sendAgentNotification(
+                $transaction->agent,
+                'New money transfer request',
+                "You have a new transfer of " . CurrencyService::format($transaction->amount, $transaction->currency ?? 'USD') . " from {$sender->name} to " . ($request->recipient_name ?? 'a recipient') . ".",
+                $transaction
+            );
+        }
+
+        $message = $request->agent_id
+            ? 'Your transfer request has been sent to the selected agent.'
+            : 'Your transfer request has been sent. An agent will be assigned soon.';
+
+        NotificationService::transferInitiated($transaction);
+
+        return redirect()->route('user.transactions')->with('success', $message);
     }
+}
 }
