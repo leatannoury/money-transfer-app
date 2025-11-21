@@ -74,7 +74,7 @@
 
 
                     <div class="flex justify-between mt-4">
-                        <a href="{{ route('admin.users') }}" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-white hover:text-red-600 transition">
+                        <a href="{{ route('admin.agents') }}" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-white hover:text-red-600 transition">
                             Back
                         </a>
                         <button type="submit" class="px-4 py-2 bg-primary text-white bg-blue-600 rounded-lg hover:bg-white text-blue-600 hover:text-blue-600 transition">

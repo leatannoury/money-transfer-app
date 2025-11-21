@@ -38,13 +38,7 @@
         
         <header class="flex justify-between items-center mb-10">
             <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Transfer Services</h1>
-            <div class="flex items-center gap-4">
-                <button class="relative text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">
-                    <span class="material-symbols-outlined">notifications</span>
-                    <span class="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-                </button>
-                <div class="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700"></div>
-            </div>
+            @include('components.user-notification-center')
         </header>
 
 <section class="mb-10 p-6 bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800">

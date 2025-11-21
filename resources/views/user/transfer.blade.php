@@ -216,6 +216,7 @@
                 <option 
                     value="{{ $beneficiary->id }}"
                     data-phone="{{ $beneficiary->phone_number ?? '' }}"
+                    data-email="{{ $beneficiary->beneficiaryUser->email ?? '' }}"
                     data-name="{{ $beneficiary->full_name }}">
                     {{ $beneficiary->full_name }}
                 </option>
@@ -737,19 +738,20 @@
               const searchTypeEmail = document.getElementById('search_type_email');
               const searchTypePhone = document.getElementById('search_type_phone');
 
-              if (phone) {
-                  searchTypePhone.checked = true;
-                  document.getElementById('email-field').style.display = 'none';
-                  document.getElementById('phone-field').style.display = 'block';
-                  phoneInput.value = phone;
-                  emailInput.value = email || '';
-              } else if (email) {
+              if (email) {
                   searchTypeEmail.checked = true;
                   document.getElementById('email-field').style.display = 'block';
                   document.getElementById('phone-field').style.display = 'none';
                   emailInput.value = email;
                   phoneInput.value = '';
+              } else if (phone) {
+                  searchTypePhone.checked = true;
+                  document.getElementById('email-field').style.display = 'none';
+                  document.getElementById('phone-field').style.display = 'block';
+                  phoneInput.value = phone;
+                  emailInput.value = '';
               } else {
+                  // Default state if neither is present (shouldn't happen ideally)
                   searchTypeEmail.checked = true;
                   document.getElementById('email-field').style.display = 'block';
                   document.getElementById('phone-field').style.display = 'none';

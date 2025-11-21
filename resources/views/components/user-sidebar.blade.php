@@ -84,6 +84,15 @@
       </li>
 
       <li>
+        <a href="{{ route('user.refunds.index') }}" 
+           class="flex items-center gap-3 px-4 py-2.5 rounded-lg text-gray-600 dark:text-gray-400 
+                  hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+          <span class="material-symbols-outlined">undo</span>
+          <span>Refunds</span>
+        </a>
+      </li>
+
+      <li>
         <a href="{{ route('user.settings') }}" 
            class="flex items-center gap-3 px-4 py-2.5 rounded-lg text-gray-600 dark:text-gray-400 
                   hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">

@@ -25,7 +25,7 @@ class TransferController extends Controller
 public function index(Request $request)
     {
         $users = User::where('id', '!=', Auth::id())->get();
-        $beneficiaries = Beneficiary::where('user_id', Auth::id())->get();
+        $beneficiaries = Beneficiary::where('user_id', Auth::id())->with('beneficiaryUser')->get();
         $currencies = CurrencyService::getSupportedCurrencies();
         $selectedCurrency = session('user_currency', 'USD');
 
