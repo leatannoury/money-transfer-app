@@ -33,6 +33,15 @@ Route::get('/', function () {
   
 });
 
+// Route::get('/send-test', function () {
+//     Mail::raw("you did a great job Lea , keep calm and stayy  positive , from ELio ", function ($message) {
+//         $message->to("202210389@ua.edu.lb")
+//                 ->subject("Money Transfer Application Project ");
+//     });
+
+//     return "Email sent!";
+// });
+
 Route::get('/dashboard', function () {
      $user = Auth::user();
      
