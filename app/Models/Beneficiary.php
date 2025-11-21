@@ -22,5 +22,10 @@ class Beneficiary extends Model
     {
         return $this->belongsTo(User::class);
     }
+
+    public function beneficiaryUser()
+    {
+        return $this->belongsTo(User::class, 'beneficiary_user_id');
+    }
 }
 
