@@ -48,21 +48,33 @@ class SocialAuthController extends Controller
 
         $user = User::where('email', $email)->first();
 
-        if (!$user) {
-            $providerName = ucfirst($provider);
-            if ($mode !== 'register') {
-                return redirect()->route('login')
-                    ->with('error', "Account not found. Please register with {$providerName} first.");
-            }
+   // Check if user exists by email
+$user = User::where('email', $email)->first();
 
-            $user = User::create([
-                'name' => $socialUser->getName() ?? 'No Name',
-                'email' => $email,
-                'status' => 'active',
-                'email_verified_at' => now(),
-                'password' => bcrypt(Str::random(16)),
-            ]);
-        }
+if ($user) {
+    // User exists → block duplicate registration
+    if ($mode === 'register') {
+        return redirect()->route('login')
+            ->with('error', "This email is already registered. Please log in instead.");
+    }
+} else {
+    // User does NOT exist → allow only register mode
+    if ($mode !== 'register') {
+        return redirect()->route('login')
+            ->with('error', "Account not found. Please register first.");
+    }
+
+    // Create new account
+    $user = User::create([
+        'name' => $socialUser->getName() ?? 'No Name',
+        'email' => $email,
+        'status' => 'active',
+        'email_verified_at' => now(),
+        'password' => bcrypt(Str::random(16)),
+    ]);
+}
+
+
 
         if (!$user->hasAnyRole(['Admin','Agent','User'])) {
             $user->assignRole('User');
