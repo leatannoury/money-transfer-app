@@ -101,8 +101,11 @@
         </div>
         <div>
             <p class="font-bold text-black dark:text-white">
-                {{ $txn->sender_id == $user->id ? 'Sent to ' . $txn->receiver->name : 'Received from ' . $txn->sender->name }}
-            </p>
+               {{ $txn->sender_id == $user->id 
+    ? 'Sent to ' . ($txn->receiver->name ?? $txn->recipient_name ?? 'Unknown')
+    : 'Received from ' . ($txn->sender->name ?? 'Unknown')
+}}
+     </p>
             <p class="text-sm text-black/60 dark:text-white/60">{{ $txn->created_at->format('M d, Y') }}</p>
         </div>
     </div>

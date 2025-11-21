@@ -7,17 +7,20 @@ use App\Http\Controllers\Controller;
 use App\Services\CurrencyService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
+use App\Models\Transaction;
+
 
 class DashboardController extends Controller
 {
 public function index(Request $request)
 {
     $user = Auth::user();
-    $transactions = \App\Models\Transaction::where('sender_id', $user->id)
-        ->orWhere('receiver_id', $user->id)
-        ->orderBy('created_at', 'desc')
-        ->take(5)
-        ->get();
+$transactions = Transaction::where('sender_id', $user->id)
+    ->orWhere('receiver_id', $user->id)
+    ->with(['sender', 'receiver'])
+    ->latest()
+    ->take(5)
+    ->get();
 
     // Get user's review if exists
     $userReview = \App\Models\Review::where('user_id', $user->id)->first();

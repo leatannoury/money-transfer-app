@@ -18,6 +18,9 @@ class Transaction extends Model
         'payment_method',
         'fee_percent',
         'fee_amount_usd',
+        'recipient_name', 
+        'recipient_phone',
+        'provider_id',
     ];
 
     public function sender()

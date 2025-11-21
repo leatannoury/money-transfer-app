@@ -57,7 +57,7 @@
                     <section>
                         <div class="flex items-center justify-between mb-3">
                             <h3 class="text-xl font-semibold text-black dark:text-white">
-                                Transfers (User ↔ User via Agent)
+                                Transfers (via agent / Cash Pickup)
                             </h3>
                             <span class="text-xs text-gray-500 dark:text-gray-400">
                                 @if($userTransfers instanceof \Illuminate\Contracts\Pagination\LengthAwarePaginator)

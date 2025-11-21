@@ -80,70 +80,78 @@ public function index()
     /**
      * Mark a transaction as completed and update balances
      */
-    public function complete($id)
-    {
-        $transaction = Transaction::findOrFail($id);
-        $agent = auth()->user(); // the logged-in agent
+public function complete($id)
+{
+    $transaction = Transaction::findOrFail($id);
+    $agent = auth()->user();
 
-        // ✅ make sure this transaction belongs to this agent and is in progress
-        if ($transaction->agent_id !== $agent->id || $transaction->status !== 'in_progress') {
-            return back()->with('error', 'Unauthorized or invalid transaction.');
+    if ($transaction->agent_id !== $agent->id || $transaction->status !== 'in_progress') {
+        return back()->with('error', 'Unauthorized or invalid transaction.');
+    }
+
+    $sender = User::find($transaction->sender_id);
+    $receiver = User::find($transaction->receiver_id);
+
+    $transactionCurrency = $transaction->currency ?? 'USD';
+    if ($transactionCurrency === 'USD') {
+        $amountInUsd = $transaction->amount;
+    } else {
+        $amountInUsd = round(CurrencyService::convert($transaction->amount, 'USD', $transactionCurrency), 2);
+        
+        if ($amountInUsd > ($transaction->amount * 100) && $transaction->amount > 100) {
+            \Log::warning("Suspicious currency conversion: {$transaction->amount} {$transactionCurrency} = {$amountInUsd} USD");
+            return back()->with('error', "Currency conversion failed. Please try again or contact support.");
         }
+    }
 
-        // ✅ fetch sender and receiver
-        $sender   = User::find($transaction->sender_id);
-        $receiver = User::find($transaction->receiver_id);
+    $commissionRate = $agent->commission;
+    $commissionAmount = ($amountInUsd * $commissionRate) / 100;
 
-        // ✅ Convert transaction amount from transaction currency to USD
-        // All balances are stored in USD, so we need to convert first
-        $transactionCurrency = $transaction->currency ?? 'USD';
-        if ($transactionCurrency === 'USD') {
-            $amountInUsd = $transaction->amount;
-        } else {
-            $amountInUsd = round(CurrencyService::convert($transaction->amount, 'USD', $transactionCurrency), 2);
-            
-            // Validate conversion result - if it's suspiciously large, the conversion might have failed
-            // (e.g., if API fails and defaults to 1.0, 20000 LBP would become 20000 USD)
-            // Check if converted amount is more than 100x the original (indicates likely conversion error)
-            if ($amountInUsd > ($transaction->amount * 100) && $transaction->amount > 100) {
-                \Log::warning("Suspicious currency conversion: {$transaction->amount} {$transactionCurrency} = {$amountInUsd} USD");
-                return back()->with('error', "Currency conversion failed. Please try again or contact support.");
-            }
-        }
+    if ($transaction->service_type === 'cash_pickup') {
+        // ✅ FIX: For cash pickup, money was ALREADY deducted from sender
+        // Agent just confirms they handed the cash to recipient
+        // Only add commission to agent
+        
+        $agent->balance += $commissionAmount;
+        $agent->save();
 
-        // ✅ agent commission rate (e.g., 10%)
-        $commissionRate   = $agent->commission; // assuming it's stored as 10 for 10%
-        $commissionAmount = ($amountInUsd * $commissionRate) / 100;
-
-        // ✅ receiver gets the rest
-        $receiverAmount = $amountInUsd - $commissionAmount;
-
-        // ✅ update balances (all in USD)
-        if ($sender->balance < $amountInUsd) {
-            return back()->with('error', 'Sender does not have enough balance.');
-        }
-
-        $sender->balance   -= $amountInUsd;
-        $receiver->balance += $receiverAmount;
-        $agent->balance    += $commissionAmount;
-
-        // ✅ mark transaction completed and persist fee data
         $transaction->status = 'completed';
         $transaction->amount_usd = $amountInUsd;
         $transaction->fee_percent = $commissionRate;
         $transaction->fee_amount_usd = $commissionAmount;
+        $transaction->save();
 
-        // ✅ save all changes
+        NotificationService::transferCompleted($transaction);
+
+        return back()->with('success', 'Cash pickup completed successfully. Commission credited to your account.');
+        
+    } else {
+        // ✅ Regular transfer_via_agent logic - deduct from sender NOW
+        $receiverAmount = $amountInUsd - $commissionAmount;
+
+        if ($sender->balance < $amountInUsd) {
+            return back()->with('error', 'Sender does not have enough balance.');
+        }
+
+        $sender->balance -= $amountInUsd;
+        $receiver->balance += $receiverAmount;
+        $agent->balance += $commissionAmount;
+
         $sender->save();
         $receiver->save();
         $agent->save();
+
+        $transaction->status = 'completed';
+        $transaction->amount_usd = $amountInUsd;
+        $transaction->fee_percent = $commissionRate;
+        $transaction->fee_amount_usd = $commissionAmount;
         $transaction->save();
 
         NotificationService::transferCompleted($transaction);
 
         return back()->with('success', 'Transaction completed successfully. Commission credited.');
     }
-
+}
     public function reject($id)
     {
         $transaction = Transaction::findOrFail($id);

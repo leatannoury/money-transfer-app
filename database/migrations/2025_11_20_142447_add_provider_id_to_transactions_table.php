@@ -11,9 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('users', function (Blueprint $table) {
-            $table->enum('agent_request_status', ['pending', 'approved', 'rejected'])->nullable();
-        });
+Schema::table('transactions', function (Blueprint $table) {
+    // Add provider_id, nullable, after transfer_service_id
+    $table->foreignId('provider_id')->nullable()->constrained()->onDelete('set null');
+});
     }
 
     /**
@@ -21,9 +22,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('users', function (Blueprint $table) {
-            $table->dropColumn('agent_request_status');
+        Schema::table('transactions', function (Blueprint $table) {
+            //
         });
     }
 };
-

@@ -4,6 +4,13 @@ use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\SocialAuthController;
+use App\Http\Controllers\User\TransferServicesController;
+
+Route::middleware(['auth', 'role:User'])->group(function () {
+    Route::get('/user/transfer-services', [TransferServicesController::class, 'index'])
+        ->name('user.transfer-services');
+});
+
 
 
 Route::get('/', function () {
