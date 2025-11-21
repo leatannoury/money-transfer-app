@@ -29,6 +29,18 @@
                     <p class="text-gray-500 mt-1">Sign in to your account</p>
                 </div>
 
+@if(session('error'))
+    <div class="bg-red-500 text-white p-3 rounded mb-4 text-center">
+        {{ session('error') }}
+    </div>
+@endif
+
+@if(session('success'))
+    <div class="bg-green-500 text-white p-3 rounded mb-4 text-center">
+        {{ session('success') }}
+    </div>
+@endif
+
     <!-- Social Login Buttons -->
     <div class="mb-6 text-center">
         <p class="text-sm text-gray-500 mb-2">Log in with</p>
