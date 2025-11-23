@@ -283,12 +283,16 @@
                 <label class="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Phone</label>
                 <div class="relative">
                   <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">phone</span>
-                  <input 
+                   <input 
                     type="text" 
                     name="phone" 
                     id="phone-input"
                     placeholder="Enter receiver's phone number"
                     value="{{ old('phone') }}"
+                    maxlength="8"
+                    pattern="\d{8}"
+                    inputmode="numeric"
+                    oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 8)"
                     class="w-full pl-10 pr-4 py-2.5 border border-gray-300 dark:border-gray-700 
                            rounded-lg bg-gray-50 dark:bg-gray-800 
                            focus:ring-2 focus:ring-primary 
@@ -373,9 +377,16 @@
             <label for="phone" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Recipient Phone Number <span class="text-red-500">*</span>
             </label>
-            <input type="number" id="phone" name="phone" 
+            <input type="text" id="phone" name="phone" 
                    value="{{ old('phone') }}" required
+                   maxlength="8"
+                   pattern="\d{8}"
+                   inputmode="numeric"
+                   oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 8)"
                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 ">
+            @error('phone')
+                <p class="text-sm text-red-500 mt-1">{{ $message }}</p>
+            @enderror
         </div>
 
         {{-- Provider Dropdown - Now Country-Specific --}}

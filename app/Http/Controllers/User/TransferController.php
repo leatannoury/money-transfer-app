@@ -167,7 +167,7 @@ public function send(Request $request)
     if ($isCashPickup) {
         // For cash pickup, we only need recipient name and phone (no user validation)
         $rules['recipient_name'] = 'required|string|max:255';
-        $rules['phone'] = 'required|string|max:50';
+        $rules['phone'] = ['required', 'string', 'regex:/^\d{8}$/'];
         
         // Provider is required for international cash pickup
         if ($isNonLebanonCashPickup) {
@@ -200,6 +200,7 @@ public function send(Request $request)
         $rules['phone'] = [
             'nullable',
             'string',
+            'regex:/^\d{8}$/',
             function ($attribute, $value, $fail) use ($request, $destinationType) {
                 $isNormalTransfer = !in_array($destinationType, ['card', 'bank']);
                 if ($isNormalTransfer && $request->search_type === 'phone' && empty($value)) {

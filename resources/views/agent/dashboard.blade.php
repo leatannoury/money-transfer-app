@@ -8,7 +8,7 @@
     {{-- Main Content --}}
     <div class="flex-1 overflow-y-auto">
         {{-- Top Bar --}}
-        <header class="flex h-20 items-center justify-between border-b border-gray-200/80 px-8 bg-white/80 backdrop-blur dark:bg-black/40 dark:border-white/10">
+        <header class="relative z-20 flex h-20 items-center justify-between border-b border-gray-200/80 px-8 bg-white/80 backdrop-blur dark:bg-black/40 dark:border-white/10">
             <h1 class="text-2xl font-semibold tracking-tight text-gray-900 dark:text-gray-50">
                 Agent Dashboard
             </h1>
@@ -141,20 +141,7 @@
                                     </span>
                                 </div>
 
-                                <div class="mt-3 flex flex-wrap items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
-                                    <span class="inline-flex items-center rounded-full bg-gray-100 px-3 py-1 text-[11px] font-medium text-gray-700 dark:bg-white/5 dark:text-gray-200">
-                                        Base: {{ $baseCurrency ?? 'USD' }}
-                                        @if(isset($currencies[$baseCurrency ?? 'USD']))
-                                            · {{ $currencies[$baseCurrency ?? 'USD'] }}
-                                        @endif
-                                    </span>
-                                    <span class="inline-flex items-center rounded-full bg-gray-100 px-3 py-1 text-[11px] font-medium text-gray-700 dark:bg-white/5 dark:text-gray-200">
-                                        Display: {{ $code }}
-                                        @if(isset($currencies[$code]))
-                                            · {{ $currencies[$code] }}
-                                        @endif
-                                    </span>
-                                </div>
+                                <!-- Badges removed as per user request -->
                             </div>
 
                             {{-- Right: currency selector --}}
