@@ -15,6 +15,7 @@ use App\Models\FakeBankAccount;
 use App\Services\NotificationService;
 use App\Models\TransferService;
 use App\Models\Provider;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\Rule;
 
 
@@ -420,7 +421,7 @@ public function send(Request $request)
             'fee_percent'     => $commissionRate,
             'fee_amount_usd'  => $commissionAmount,
         ]);
-
+  
         // Send notification to agent if local cash pickup
         if ($selectedAgent && $status === 'in_progress') {
             NotificationService::sendAgentNotification(
@@ -430,12 +431,14 @@ public function send(Request $request)
                 $transaction
             );
         }
+        
 
         $message = $isNonLebanonCashPickup 
             ? 'Cash pickup request completed. The recipient can collect the cash from the selected provider with the transaction reference.'
             : 'Your cash pickup request has been sent to the agent. The recipient can collect the cash once the agent completes the transaction.';
 
         NotificationService::transferInitiated($transaction);
+        
 
         return redirect()->route('user.transactions')->with('success', $message);
     }
@@ -630,6 +633,23 @@ public function send(Request $request)
         } else {
             NotificationService::transferCompleted($transaction);
         }
+
+        // $senderMessage = $transaction->status === 'suspicious'
+        //     ? "Dear {$sender->name},\n\nYour transaction of " . CurrencyService::format($amount, $transactionCurrency) . " to {$receiver->name} has been flagged as suspicious and is awaiting admin approval.\n\nTransaction ID: {$transaction->id}"
+        //     : "Dear {$sender->name},\n\nYour transaction of " . CurrencyService::format($amount, $transactionCurrency) . " to {$receiver->name} has been successfully completed.\n\nTransaction ID: {$transaction->id}";
+
+        // $receiverMessage = $transaction->status === 'suspicious'
+        //     ? "Dear {$receiver->name},\n\nA transaction of " . CurrencyService::format($amount, $transactionCurrency) . " from {$sender->name} is pending review by the admin. You will receive the funds once approved.\n\nTransaction ID: {$transaction->id}"
+        //     : "Dear {$receiver->name},\n\nYou have received " . CurrencyService::format($amount, $transactionCurrency) . " from {$sender->name}.\n\nTransaction ID: {$transaction->id}";
+
+        // // Send emails
+        // \Mail::raw($senderMessage, function($message) use ($sender) {
+        //     $message->to($sender->email)->subject("Transaction Notification");
+        // });
+
+        // \Mail::raw($receiverMessage, function($message) use ($receiver) {
+        //     $message->to($receiver->email)->subject("Incoming Transaction");
+        // });
 
         return redirect()->route('user.transactions')->with('success', $message);
     }
