@@ -156,12 +156,11 @@ public function send(Request $request)
         'card_id' => 'nullable|exists:payment_methods,id',
         'bank_id' => 'nullable|exists:payment_methods,id',
         'transfer_service_id' => 'nullable|exists:transfer_services,id',
-'service_type' => [
-    'required',
-    'string',
-    'in:user_transfer,agent_transfer,transfer_via_agent,cash_pickup,bank_transfer,card_transfer,wallet_to_wallet'
-],
-
+        'service_type' => [
+            'required',
+            'string',
+            'in:user_transfer,agent_transfer,transfer_via_agent,cash_pickup,bank_transfer,card_transfer,wallet_to_wallet'
+        ],
     ];
 
     // Add conditional validation based on service type
@@ -230,14 +229,12 @@ public function send(Request $request)
         $rules = array_merge($rules, [
             'cardholder_name' => 'required|string|max:255',
             'card_number' => 'required|string|digits:16',
-          
         ]);
     } elseif ($destinationType === 'bank') {
         $rules = array_merge($rules, [
             'account_holder_name' => 'required|string|max:255',
             'bank_name' => 'required|string|max:255',
             'account_number' => 'required|string|max:50',
-           
         ]);
     }
 
@@ -254,12 +251,6 @@ public function send(Request $request)
     $sender->refresh();
 
     $amount = (float) $request->amount;
-    
-    // if ($transferService && in_array($transferService->destination_type, ['card', 'bank'])) {
-    //     $serviceType = 'wallet_to_wallet';
-    // } else {
-    //     $serviceType = $request->service_type; 
-    // }
 
     $serviceType = $request->service_type;
 
@@ -299,10 +290,9 @@ public function send(Request $request)
     // ✅ DETERMINE RECEIVER BEFORE USING IT
     $receiver = null;
     $isCardOrBankPayout = $transferService && in_array($transferService->destination_type, ['card', 'bank']);
-    $isCashPickup = ($serviceType === 'cash_pickup');    // Only look for receiver user if it's NOT cash pickup and NOT card/bank payout
+    $isCashPickup = ($serviceType === 'cash_pickup');
 
-
- if (!$isCardOrBankPayout && !$isCashPickup) { // <-- 🛠️ FIX APPLIED HERE
+    if (!$isCardOrBankPayout && !$isCashPickup) {
         // Standard wallet-to-wallet transfer
         if ($request->search_type === 'email') {
             $receiver = User::where('email', $request->email)->first();
@@ -321,14 +311,14 @@ public function send(Request $request)
         }
     }
 
-    // Handle Cash Pickup (both local and international)
+    // 🔹 HANDLE CASH PICKUP (both local and international)
     if ($isCashPickup) {
-        // For local cash pickup (Lebanon), agent is required and set via $request->agent_id
-        // For international cash pickup, agent might not be set initially
         $selectedAgent = null;
         $commissionRate = 0;
         $commissionAmount = 0;
         
+        // For local cash pickup (Lebanon), agent is required and set via $request->agent_id
+        // For international cash pickup, agent might not be set initially
         if ($request->agent_id) {
             $selectedAgent = User::findOrFail($request->agent_id);
             
@@ -339,73 +329,99 @@ public function send(Request $request)
             $commissionRate = $selectedAgent->commission ?? 0;
             $commissionAmount = round(($amountInUsd * $commissionRate) / 100, 2);
         }
-        
-        // ✅ DEDUCT MONEY FROM SENDER IMMEDIATELY FOR CASH PICKUP
-        if ($request->payment_method === 'wallet') {
+
+        // ⚠️ IMPORTANT: TWO CASES
+        // 1) INTERNATIONAL CASH PICKUP (has transfer_service_id) → status = completed, deduct NOW
+        // 2) LOCAL CASH PICKUP (NO transfer_service_id) → status = in_progress, deduct LATER in Agent::complete()
+
+        if ($isNonLebanonCashPickup) {
+            // ✅ INTERNATIONAL CASH PICKUP ⇒ keep OLD behavior (deduct at send time)
+
+            if ($request->payment_method === 'wallet') {
+                $senderBalance = (float) ($sender->balance ?? 0);
+                if ($senderBalance < $amountInUsd) {
+                    return back()->withInput()->withErrors([
+                        'amount' => "Insufficient wallet balance. You need " . number_format($amountInUsd, 2) . " USD"
+                    ]);
+                }
+
+                $sender->balance -= $amountInUsd;
+                $sender->save();
+
+            } elseif ($request->payment_method === 'credit_card') {
+                $request->validate(['card_id' => 'required|exists:payment_methods,id']);
+                $paymentMethod = PaymentMethod::findOrFail($request->card_id);
+                $card = FakeCard::where('card_number', 'like', '%'.$paymentMethod->last4)->first();
+                
+                if (!$card || $card->balance < $amountInUsd) {
+                    $available = $card ? number_format($card->balance, 2) : '0.00';
+                    return back()->withInput()->withErrors([
+                        'amount' => "Insufficient card balance. Available: $available USD, Required: " . number_format($amountInUsd, 2) . " USD"
+                    ]);
+                }
+                
+                $card->balance -= $amountInUsd;
+                $card->save();
+                
+            } elseif ($request->payment_method === 'bank_account') {
+                $request->validate(['bank_id' => 'required|exists:payment_methods,id']);
+                $paymentMethod = PaymentMethod::findOrFail($request->bank_id);
+                $bank = FakeBankAccount::where('account_number', 'like', '%'.$paymentMethod->last4)->first();
+                
+                if (!$bank || $bank->balance < $amountInUsd) {
+                    $available = $bank ? number_format($bank->balance, 2) : '0.00';
+                    return back()->withInput()->withErrors([
+                        'amount' => "Insufficient bank balance. Available: $available USD, Required: " . number_format($amountInUsd, 2) . " USD"
+                    ]);
+                }
+                
+                $bank->balance -= $amountInUsd;
+                $bank->save();
+            }
+
+            $status = 'completed';
+
+        } else {
+            // ✅ LOCAL CASH PICKUP VIA AGENT ⇒ DO NOT DEDUCT NOW
+
+            if ($request->payment_method !== 'wallet') {
+                // To keep it simple and safe we only support WALLET for delayed cash pickup.
+                return back()->withInput()->withErrors([
+                    'payment_method' => 'For local cash pickup via agent, only Wallet payment is supported.'
+                ]);
+            }
+
+            // Just check that the sender HAS enough now. Actual deduction happens when agent completes.
             $senderBalance = (float) ($sender->balance ?? 0);
             if ($senderBalance < $amountInUsd) {
                 return back()->withInput()->withErrors([
                     'amount' => "Insufficient wallet balance. You need " . number_format($amountInUsd, 2) . " USD"
                 ]);
             }
-            
-            $sender->balance -= $amountInUsd;
-            $sender->save();
-            
-        } elseif ($request->payment_method === 'credit_card') {
-            $request->validate(['card_id' => 'required|exists:payment_methods,id']);
-            $paymentMethod = PaymentMethod::findOrFail($request->card_id);
-            $card = FakeCard::where('card_number', 'like', '%'.$paymentMethod->last4)->first();
-            
-            if (!$card || $card->balance < $amountInUsd) {
-                $available = $card ? number_format($card->balance, 2) : '0.00';
-                return back()->withInput()->withErrors([
-                    'amount' => "Insufficient card balance. Available: $available USD, Required: " . number_format($amountInUsd, 2) . " USD"
-                ]);
-            }
-            
-            $card->balance -= $amountInUsd;
-            $card->save();
-            
-        } elseif ($request->payment_method === 'bank_account') {
-            $request->validate(['bank_id' => 'required|exists:payment_methods,id']);
-            $paymentMethod = PaymentMethod::findOrFail($request->bank_id);
-            $bank = FakeBankAccount::where('account_number', 'like', '%'.$paymentMethod->last4)->first();
-            
-            if (!$bank || $bank->balance < $amountInUsd) {
-                $available = $bank ? number_format($bank->balance, 2) : '0.00';
-                return back()->withInput()->withErrors([
-                    'amount' => "Insufficient bank balance. Available: $available USD, Required: " . number_format($amountInUsd, 2) . " USD"
-                ]);
-            }
-            
-            $bank->balance -= $amountInUsd;
-            $bank->save();
+
+            $status = 'in_progress';
         }
-        
-        // Set status based on whether it's international or local
-        $status = $isNonLebanonCashPickup ? 'completed' : 'in_progress';
-        
+
         $transaction = Transaction::create([
-            'sender_id' => $sender->id,
-            'receiver_id' => null, // No receiver user for cash pickup
-            'recipient_name' => $request->recipient_name,
+            'sender_id'       => $sender->id,
+            'receiver_id'     => null, // No receiver user for cash pickup
+            'recipient_name'  => $request->recipient_name,
             'recipient_phone' => $request->phone,
-            'provider_id' => $request->provider_id ?? null,
-            'amount' => $destinationAmount,
-            'amount_usd' => $amountInUsd,
-            'currency' => $transactionCurrency,
-            'status' => $status,
-            'agent_id' => $request->agent_id ?? null,
-            'service_type' => 'cash_pickup',
-            'payment_method' => $request->payment_method,
+            'provider_id'     => $request->provider_id ?? null,
+            'amount'          => $destinationAmount,
+            'amount_usd'      => $amountInUsd,
+            'currency'        => $transactionCurrency,
+            'status'          => $status,
+            'agent_id'        => $request->agent_id ?? null,
+            'service_type'    => 'cash_pickup',
+            'payment_method'  => $request->payment_method,
             'transfer_service_id' => $transferService?->id,
-            'fee_percent' => $commissionRate,
-            'fee_amount_usd' => $commissionAmount,
+            'fee_percent'     => $commissionRate,
+            'fee_amount_usd'  => $commissionAmount,
         ]);
 
         // Send notification to agent if local cash pickup
-        if ($selectedAgent) {
+        if ($selectedAgent && $status === 'in_progress') {
             NotificationService::sendAgentNotification(
                 $selectedAgent,
                 'New Cash Pickup Request',
@@ -416,14 +432,14 @@ public function send(Request $request)
 
         $message = $isNonLebanonCashPickup 
             ? 'Cash pickup request completed. The recipient can collect the cash from the selected provider with the transaction reference.'
-            : 'Your cash pickup request has been sent to the agent. The recipient can collect the cash once the agent accepts and completes the transaction.';
+            : 'Your cash pickup request has been sent to the agent. The recipient can collect the cash once the agent completes the transaction.';
 
         NotificationService::transferInitiated($transaction);
 
         return redirect()->route('user.transactions')->with('success', $message);
     }
 
-    // Handle Transfer via Agent (non-cash-pickup)
+    // 🔹 HANDLE TRANSFER VIA AGENT (non-cash-pickup)
     if ($serviceType === 'transfer_via_agent') {
         $request->validate(['agent_id' => 'required|exists:users,id']);
         $selectedAgent = User::findOrFail($request->agent_id);
@@ -432,31 +448,30 @@ public function send(Request $request)
             return back()->withInput()->withErrors(['agent_id' => 'Selected agent is not available.']);
         }
 
-        $commissionRate = $selectedAgent->commission ?? 0;
+        $commissionRate   = $selectedAgent->commission ?? 0;
         $commissionAmount = round(($amountInUsd * $commissionRate) / 100, 2);
         
         $status = 'in_progress';
         
         $transaction = Transaction::create([
-            'sender_id' => $sender->id,
-            'receiver_id' => $receiver?->id,
-            'recipient_name' => $request->recipient_name 
-    ?? $request->cardholder_name 
-    ?? $request->account_holder_name 
-    ?? null,
-
-            'recipient_phone' => $request->phone ?? null,
-            'provider_id' => null,
-            'amount' => $destinationAmount,
-            'amount_usd' => $amountInUsd,
-            'currency' => $transactionCurrency,
-            'status' => $status,
-            'agent_id' => $request->agent_id,
-            'service_type' => $serviceType,
-            'payment_method' => $request->payment_method,
+            'sender_id'        => $sender->id,
+            'receiver_id'      => $receiver?->id,
+            'recipient_name'   => $request->recipient_name 
+                                   ?? $request->cardholder_name 
+                                   ?? $request->account_holder_name 
+                                   ?? null,
+            'recipient_phone'  => $request->phone ?? null,
+            'provider_id'      => null,
+            'amount'           => $destinationAmount,
+            'amount_usd'       => $amountInUsd,
+            'currency'         => $transactionCurrency,
+            'status'           => $status,
+            'agent_id'         => $request->agent_id,
+            'service_type'     => $serviceType,
+            'payment_method'   => $request->payment_method,
             'transfer_service_id' => $transferService?->id,
-            'fee_percent' => $commissionRate,
-            'fee_amount_usd' => $commissionAmount,
+            'fee_percent'      => $commissionRate,
+            'fee_amount_usd'   => $commissionAmount,
         ]);
 
         NotificationService::sendAgentNotification(
@@ -471,7 +486,8 @@ public function send(Request $request)
         return redirect()->route('user.transactions')->with('success', 'Your transfer request has been sent to the selected agent.');
     }
 
-    // Payment method validation and balance checks for wallet-to-wallet
+    // 🔹 FROM HERE DOWN: your existing wallet_to_wallet logic (unchanged)
+
     $paymentMethod = null;
     $card = null;
     $bank = null;
@@ -541,7 +557,7 @@ public function send(Request $request)
         }
     }
 
-    // Process wallet-to-wallet transaction
+    // Process wallet-to-wallet transaction (unchanged)
     if ($serviceType === 'wallet_to_wallet') {
         $admin = User::role('Admin')->first();
         $adminCommission = $admin->commission ?? 0;
@@ -581,31 +597,25 @@ public function send(Request $request)
         }
 
         $transaction = Transaction::create([
-            'sender_id' => $sender->id,
-            'receiver_id' => $receiver?->id,
-            'recipient_name' => $request->recipient_name 
-    ?? $request->cardholder_name 
-    ?? $request->account_holder_name 
-    ?? null,
-
-            'recipient_phone' => $request->phone ?? null,
-            'amount' => $amount,
-            'amount_usd' => $amountInUsd,
-            'currency' => $transactionCurrency,
-            'status' => $transactionStatus,
-            'agent_id' => $admin?->id,
-            'service_type' => $serviceType,
-            'payment_method' => $request->payment_method,
-            'fee_percent' => $adminCommission,
-            'fee_amount_usd' => $feeInUsd,
+            'sender_id'        => $sender->id,
+            'receiver_id'      => $receiver?->id,
+            'recipient_name'   => $request->recipient_name 
+                                   ?? $request->cardholder_name 
+                                   ?? $request->account_holder_name 
+                                   ?? null,
+            'recipient_phone'  => $request->phone ?? null,
+            'amount'           => $amount,
+            'amount_usd'       => $amountInUsd,
+            'currency'         => $transactionCurrency,
+            'status'           => $transactionStatus,
+            'agent_id'         => $admin?->id,
+            'service_type'     => $serviceType,
+            'payment_method'   => $request->payment_method,
+            'fee_percent'      => $adminCommission,
+            'fee_amount_usd'   => $feeInUsd,
             'transfer_service_id' => $transferService?->id,
-            'recipient_name' => $request->recipient_name 
-    ?? $request->cardholder_name 
-    ?? $request->account_holder_name 
-    ?? null,
-
-            'recipient_card_number' => $request->card_number ?? null,
-            'recipient_account_number' => $request->account_number ?? null,
+            'recipient_card_number'   => $request->card_number ?? null,
+            'recipient_account_number'=> $request->account_number ?? null,
         ]);
 
         $message = $transactionStatus === 'suspicious'
@@ -626,5 +636,6 @@ public function send(Request $request)
     // Fallback error
     return back()->withInput()->withErrors(['error' => 'Invalid transaction type.']);
 }
+
 
 }

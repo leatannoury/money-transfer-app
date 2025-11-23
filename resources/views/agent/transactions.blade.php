@@ -40,9 +40,10 @@
 
                 @php
                     $allEmpty =
-                        ($userTransfers instanceof \Illuminate\Support\Collection ? $userTransfers->isEmpty() : $userTransfers->count() === 0)
-                        && ($cashIns instanceof \Illuminate\Support\Collection ? $cashIns->isEmpty() : $cashIns->count() === 0)
-                        && ($cashOuts instanceof \Illuminate\Support\Collection ? $cashOuts->isEmpty() : $cashOuts->count() === 0);
+                        ($userTransfers->count() === 0)
+                        && ($cashPickups->count() === 0)
+                        && ($cashIns->count() === 0)
+                        && ($cashOuts->count() === 0);
                 @endphp
 
                 @if($allEmpty)
@@ -51,21 +52,14 @@
                     </p>
                 @else
 
-                    {{-- =====================================================
-                         1) USER ↔ USER TRANSFERS (via Agent)
-                       ===================================================== --}}
+                    {{-- 1) USER ↔ USER TRANSFERS (via Agent) --}}
                     <section>
                         <div class="flex items-center justify-between mb-3">
                             <h3 class="text-xl font-semibold text-black dark:text-white">
-                                Transfers (via agent / Cash Pickup)
+                                Transfers (via Agent)
                             </h3>
                             <span class="text-xs text-gray-500 dark:text-gray-400">
-                                @if($userTransfers instanceof \Illuminate\Contracts\Pagination\LengthAwarePaginator)
-                                    {{ $userTransfers->total() }}
-                                @else
-                                    {{ $userTransfers->count() }}
-                                @endif
-                                transactions
+                                {{ $userTransfers->total() }} transactions
                             </span>
                         </div>
 
@@ -77,26 +71,43 @@
                             @include('agent.partials.transactions-table', [
                                 'rows'        => $userTransfers,
                                 'agent'       => $agent,
-                                'showActions' => true,   {{-- Accept / Complete / Reject --}}
+                                'showActions' => true,
                             ])
                         @endif
                     </section>
 
-                    {{-- =====================================================
-                         2) CASH-IN OPERATIONS
-                       ===================================================== --}}
+                    {{-- 2) CASH PICKUP PAYOUTS --}}
+                    <section>
+                        <div class="flex items-center justify-between mb-3 mt-8">
+                            <h3 class="text-xl font-semibold text-black dark:text-white">
+                                Cash Pickup Payouts
+                            </h3>
+                            <span class="text-xs text-gray-500 dark:text-gray-400">
+                                {{ $cashPickups->total() }} transactions
+                            </span>
+                        </div>
+
+                        @if($cashPickups->isEmpty())
+                            <p class="text-sm text-gray-600 dark:text-gray-400 border border-dashed border-gray-300 rounded-lg p-4">
+                                No cash pickup payouts yet.
+                            </p>
+                        @else
+                            @include('agent.partials.transactions-table', [
+                                'rows'        => $cashPickups,
+                                'agent'       => $agent,
+                                'showActions' => true,
+                            ])
+                        @endif
+                    </section>
+
+                    {{-- 3) CASH-IN OPERATIONS --}}
                     <section>
                         <div class="flex items-center justify-between mb-3 mt-8">
                             <h3 class="text-xl font-semibold text-black dark:text-white">
                                 Cash-In Operations
                             </h3>
                             <span class="text-xs text-gray-500 dark:text-gray-400">
-                                @if($cashIns instanceof \Illuminate\Contracts\Pagination\LengthAwarePaginator)
-                                    {{ $cashIns->total() }}
-                                @else
-                                    {{ $cashIns->count() }}
-                                @endif
-                                transactions
+                                {{ $cashIns->total() }} transactions
                             </span>
                         </div>
 
@@ -108,26 +119,19 @@
                             @include('agent.partials.transactions-table', [
                                 'rows'        => $cashIns,
                                 'agent'       => $agent,
-                                'showActions' => false,  {{-- history only --}}
+                                'showActions' => false,
                             ])
                         @endif
                     </section>
 
-                    {{-- =====================================================
-                         3) CASH-OUT OPERATIONS
-                       ===================================================== --}}
+                    {{-- 4) CASH-OUT OPERATIONS --}}
                     <section>
                         <div class="flex items-center justify-between mb-3 mt-8">
                             <h3 class="text-xl font-semibold text-black dark:text-white">
                                 Cash-Out Operations
                             </h3>
                             <span class="text-xs text-gray-500 dark:text-gray-400">
-                                @if($cashOuts instanceof \Illuminate\Contracts\Pagination\LengthAwarePaginator)
-                                    {{ $cashOuts->total() }}
-                                @else
-                                    {{ $cashOuts->count() }}
-                                @endif
-                                transactions
+                                {{ $cashOuts->total() }} transactions
                             </span>
                         </div>
 
@@ -139,7 +143,7 @@
                             @include('agent.partials.transactions-table', [
                                 'rows'        => $cashOuts,
                                 'agent'       => $agent,
-                                'showActions' => false,  {{-- history only --}}
+                                'showActions' => false,
                             ])
                         @endif
                     </section>
