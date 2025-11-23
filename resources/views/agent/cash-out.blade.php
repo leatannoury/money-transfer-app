@@ -105,8 +105,18 @@
     function updateCoPlaceholder() {
         if (!coType.value || coType.value === 'email') {
             coInput.placeholder = 'user@gmail.com';
+            coInput.removeAttribute('maxlength');
+            coInput.removeAttribute('pattern');
+            coInput.removeAttribute('inputmode');
+            coInput.oninput = null;
         } else {
-            coInput.placeholder = '03 123 456';
+            coInput.placeholder = 'Enter 8 digits';
+            coInput.setAttribute('maxlength', '8');
+            coInput.setAttribute('pattern', '\\d{8}');
+            coInput.setAttribute('inputmode', 'numeric');
+            coInput.oninput = function() {
+                this.value = this.value.replace(/[^0-9]/g, '').slice(0, 8);
+            };
         }
     }
 

@@ -104,8 +104,18 @@
     function updateCiPlaceholder() {
         if (ciType.value === 'email') {
             ciInput.placeholder = 'user@gmail.com';
+            ciInput.removeAttribute('maxlength');
+            ciInput.removeAttribute('pattern');
+            ciInput.removeAttribute('inputmode');
+            ciInput.oninput = null;
         } else {
-            ciInput.placeholder = '03 123 456';
+            ciInput.placeholder = 'Enter 8 digits';
+            ciInput.setAttribute('maxlength', '8');
+            ciInput.setAttribute('pattern', '\\d{8}');
+            ciInput.setAttribute('inputmode', 'numeric');
+            ciInput.oninput = function() {
+                this.value = this.value.replace(/[^0-9]/g, '').slice(0, 8);
+            };
         }
     }
 

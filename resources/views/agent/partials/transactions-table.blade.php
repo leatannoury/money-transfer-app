@@ -140,7 +140,14 @@
                                                       dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100"
                                                placeholder="Recipient phone"
                                                value="{{ old('recipient_phone') }}"
+                                               maxlength="8"
+                                               pattern="\d{8}"
+                                               inputmode="numeric"
+                                               oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 8)"
                                                required>
+                                        @error('recipient_phone')
+                                            <p class="text-xs text-red-500 mt-1">{{ $message }}</p>
+                                        @enderror
                                     </div>
                                     <button type="submit"
                                             class="inline-flex items-center justify-center w-full px-3 py-1.5 rounded-full text-xs font-semibold

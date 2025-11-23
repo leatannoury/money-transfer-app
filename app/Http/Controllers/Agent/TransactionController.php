@@ -121,7 +121,7 @@ class TransactionController extends Controller
     if ($transaction->service_type === 'cash_pickup') {
         // 1) Agent must enter phone
         $data = $request->validate([
-            'recipient_phone' => 'required|string|max:50',
+            'recipient_phone' => ['required', 'string', 'regex:/^\d{8}$/'],
         ]);
 
         $enteredPhone = trim($data['recipient_phone'] ?? '');
@@ -168,6 +168,27 @@ class TransactionController extends Controller
     $transaction->status = 'completed';
     $transaction->save();
 
+    // 5) Notify Sender (User)
+    /** @var \App\Models\User|null $sender */
+    $sender = $transaction->sender;
+    if ($sender) {
+        NotificationService::sendUserNotification(
+            $sender,
+            'transfer_completed',
+            'Transfer Completed',
+            "Your transfer of " . CurrencyService::format($transaction->amount, $transaction->currency) . " has been completed by the agent.",
+            $transaction
+        );
+    }
+
+    // 6) Notify Agent (Current User)
+    NotificationService::sendAgentNotification(
+        $agent,
+        'Transfer Completed',
+        "You have successfully completed the transfer #" . $transaction->id . ".",
+        $transaction
+    );
+
     return back()->with('success', 'Transaction completed successfully.');
 }
    
@@ -205,7 +226,15 @@ class TransactionController extends Controller
     {
         $request->validate([
             'search_type'    => 'required|in:email,phone',
-            'email_or_phone' => 'required|string',
+            'email_or_phone' => [
+                'required',
+                'string',
+                function ($attribute, $value, $fail) use ($request) {
+                    if ($request->search_type === 'phone' && !preg_match('/^\d{8}$/', $value)) {
+                        $fail('The phone number must be exactly 8 digits.');
+                    }
+                },
+            ],
             'amount'         => 'required|numeric|min:1',
         ]);
 
@@ -270,7 +299,15 @@ class TransactionController extends Controller
     {
         $request->validate([
             'search_type'    => 'required|in:email,phone',
-            'email_or_phone' => 'required|string',
+            'email_or_phone' => [
+                'required',
+                'string',
+                function ($attribute, $value, $fail) use ($request) {
+                    if ($request->search_type === 'phone' && !preg_match('/^\d{8}$/', $value)) {
+                        $fail('The phone number must be exactly 8 digits.');
+                    }
+                },
+            ],
             'amount'         => 'required|numeric|min:1',
         ]);
 
