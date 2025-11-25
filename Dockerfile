@@ -18,7 +18,8 @@ RUN apt-get update && apt-get install -y \
 
 # Install PHP extensions
 RUN docker-php-ext-configure zip
-RUN docker-php-ext-install pdo pdo_mysql mbstring zip
+RUN docker-php-ext-install pdo pdo_pgsql pgsql pdo_mysql mbstring zip
+
 
 # Set working directory
 WORKDIR /var/www/html
