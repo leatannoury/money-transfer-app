@@ -51,6 +51,14 @@
           <span class="material-symbols-outlined">north_east</span>
           <span>Send Money</span>
         </a>
+
+        <a href="{{ route('user.wallet.add') }}" 
+   class="flex items-center gap-3 p-3 rounded-lg text-gray-600 dark:text-gray-400 
+          hover:bg-gray-200 dark:hover:bg-gray-800">
+    <span class="material-symbols-outlined">account_balance_wallet</span>
+    <span>Fund Wallet</span>
+</a>
+
                 <a href="{{ route('user.transactions') }}" class="flex items-center gap-3 p-3 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-800">
           <span class="material-symbols-outlined">receipt_long</span>
           <span>Transactions</span>

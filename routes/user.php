@@ -15,6 +15,7 @@ use App\Http\Controllers\User\UserNotificationController;
 use App\Http\Controllers\User\RefundController;
 
 
+
 // All user routes will share these middlewares
 Route::middleware(['auth','check.banned','role:User'])->prefix('user')->name('user.')->group(function () {
 
@@ -25,6 +26,21 @@ Route::middleware(['auth','check.banned','role:User'])->prefix('user')->name('us
     Route::get('/transfer', [TransferController::class, 'index'])->name('transfer');
     Route::post('/transfer', [TransferController::class, 'send'])->name('transfer.send');
 
+
+    // Wallet Funding (Stripe)
+Route::get('/wallet/add', [\App\Http\Controllers\User\WalletController::class, 'showAddFunds'])
+    ->name('wallet.add');
+
+Route::post('/wallet/create-checkout', [\App\Http\Controllers\User\WalletController::class, 'createCheckout'])
+    ->name('wallet.checkout');
+
+Route::get('/wallet/success', [\App\Http\Controllers\User\WalletController::class, 'success'])
+    ->name('wallet.success');
+
+Route::get('/wallet/cancel', [\App\Http\Controllers\User\WalletController::class, 'cancel'])
+    ->name('wallet.cancel');
+
+    
     //  Transaction history
     Route::get('/transactions', [TransactionController::class, 'index'])->name('transactions');
     
