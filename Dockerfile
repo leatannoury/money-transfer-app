@@ -23,39 +23,42 @@ RUN docker-php-ext-install pdo pdo_mysql mbstring zip
 # Set working directory
 WORKDIR /var/www/html
 
-# Set Apache document root to /public
+# Set Apache document root to public/
 ENV APACHE_DOCUMENT_ROOT=/var/www/html/public
 RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' \
     /etc/apache2/sites-available/*.conf /etc/apache2/apache2.conf
 
-# COPY project files
+# Copy application files
 COPY . .
 
 # Install Composer
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 # ------------------------------------------------------------
-# 🔥 FORCE MYSQL ENVIRONMENT DURING BUILD
-# Prevents Laravel from using SQLite and failing during
-# "package:discover" inside composer install
+# FIX: Force SQLite during build so Laravel does not try MySQL
 # ------------------------------------------------------------
-ENV DB_CONNECTION=mysql
-ENV DB_HOST=${DB_HOST}
-ENV DB_PORT=3306
-ENV DB_DATABASE=${DB_DATABASE}
-ENV DB_USERNAME=${DB_USERNAME}
-ENV DB_PASSWORD=${DB_PASSWORD}
+ENV DB_CONNECTION=sqlite
+ENV DB_DATABASE=/tmp/database.sqlite
 
-# Install Laravel dependencies
+# Create fake sqlite file so Laravel does not crash
+RUN touch /tmp/database.sqlite
+
+# Now install dependencies (Laravel will NOT connect to MySQL)
 RUN composer install --no-dev --optimize-autoloader
 
-# Generate app key (skip errors if already exists)
+# Generate key (no fail if already exists)
 RUN php artisan key:generate --force || true
 
-# Set correct permissions
+# Fix permissions
 RUN chown -R www-data:www-data storage bootstrap/cache
 
-# Expose Apache port
+# ------------------------------------------------------------
+# RUNTIME CONFIG — Render environment variables take over
+# These override the build-time SQLite settings
+# ------------------------------------------------------------
+ENV DB_CONNECTION=mysql
+
+# Expose port 80
 EXPOSE 80
 
 # Start Apache
