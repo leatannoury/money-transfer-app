@@ -74,3 +74,19 @@ require __DIR__ . '/admin.php';
 
 Route::get('/auth/{provider}', [SocialAuthController::class, 'redirect']);
 Route::get('/auth/{provider}/callback', [SocialAuthController::class, 'callback']);
+
+
+Route::get('/debug-log', function () {
+    try {
+        $path = storage_path('logs/laravel.log');
+
+        if (!file_exists($path)) {
+            return "laravel.log does not exist.";
+        }
+
+        return nl2br(e(file_get_contents($path)));
+    } catch (\Exception $e) {
+        return $e->getMessage();
+    }
+});
+
